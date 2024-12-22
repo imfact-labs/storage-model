@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	"github.com/ProtoconNet/mitum-currency/v3/types"
 	strtypes "github.com/ProtoconNet/mitum-storage/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
@@ -109,10 +110,35 @@ func (fact RegisterModelFact) Currency() types.CurrencyID {
 	return fact.currency
 }
 
-type RegisterModel struct {
-	common.BaseOperation
+func (fact RegisterModelFact) FeeBase() map[types.CurrencyID][]common.Big {
+	required := make(map[types.CurrencyID][]common.Big)
+	required[fact.Currency()] = []common.Big{common.ZeroBig}
+
+	return required
 }
 
-func NewRegisterModel(fact RegisterModelFact) (RegisterModel, error) {
-	return RegisterModel{BaseOperation: common.NewBaseOperation(RegisterModelHint, fact)}, nil
+func (fact RegisterModelFact) FeePayer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact RegisterModelFact) FactUser() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact RegisterModelFact) Signer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact RegisterModelFact) InActiveContractOwnerHandlerOnly() [][2]mitumbase.Address {
+	return [][2]mitumbase.Address{{fact.contract, fact.sender}}
+}
+
+type RegisterModel struct {
+	extras.ExtendedOperation
+}
+
+func NewRegisterModel(fact RegisterModelFact) RegisterModel {
+	return RegisterModel{
+		ExtendedOperation: extras.NewExtendedOperation(RegisterModelHint, fact),
+	}
 }

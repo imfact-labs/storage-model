@@ -2,9 +2,10 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
-	mitumbase "github.com/ProtoconNet/mitum2/base"
+	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
 	"github.com/ProtoconNet/mitum2/util/valuehash"
@@ -17,18 +18,18 @@ var (
 )
 
 type CreateDataFact struct {
-	mitumbase.BaseFact
-	sender    mitumbase.Address
-	contract  mitumbase.Address
+	base.BaseFact
+	sender    base.Address
+	contract  base.Address
 	dataKey   string
 	dataValue string
 	currency  currencytypes.CurrencyID
 }
 
 func NewCreateDataFact(
-	token []byte, sender, contract mitumbase.Address,
+	token []byte, sender, contract base.Address,
 	key, value string, currency currencytypes.CurrencyID) CreateDataFact {
-	bf := mitumbase.NewBaseFact(CreateDataFactHint, token)
+	bf := base.NewBaseFact(CreateDataFactHint, token)
 	fact := CreateDataFact{
 		BaseFact:  bf,
 		sender:    sender,
@@ -99,15 +100,15 @@ func (fact CreateDataFact) Bytes() []byte {
 	)
 }
 
-func (fact CreateDataFact) Token() mitumbase.Token {
+func (fact CreateDataFact) Token() base.Token {
 	return fact.BaseFact.Token()
 }
 
-func (fact CreateDataFact) Sender() mitumbase.Address {
+func (fact CreateDataFact) Sender() base.Address {
 	return fact.sender
 }
 
-func (fact CreateDataFact) Contract() mitumbase.Address {
+func (fact CreateDataFact) Contract() base.Address {
 	return fact.contract
 }
 
@@ -123,16 +124,41 @@ func (fact CreateDataFact) Currency() currencytypes.CurrencyID {
 	return fact.currency
 }
 
-func (fact CreateDataFact) Addresses() ([]mitumbase.Address, error) {
-	as := []mitumbase.Address{fact.sender}
+func (fact CreateDataFact) Addresses() ([]base.Address, error) {
+	as := []base.Address{fact.sender}
 
 	return as, nil
 }
 
+func (fact CreateDataFact) FeeBase() map[currencytypes.CurrencyID][]common.Big {
+	required := make(map[currencytypes.CurrencyID][]common.Big)
+	required[fact.Currency()] = []common.Big{common.ZeroBig}
+
+	return required
+}
+
+func (fact CreateDataFact) FeePayer() base.Address {
+	return fact.sender
+}
+
+func (fact CreateDataFact) FactUser() base.Address {
+	return fact.sender
+}
+
+func (fact CreateDataFact) Signer() base.Address {
+	return fact.sender
+}
+
+func (fact CreateDataFact) ActiveContractOwnerHandlerOnly() [][2]base.Address {
+	return [][2]base.Address{{fact.contract, fact.sender}}
+}
+
 type CreateData struct {
-	common.BaseOperation
+	extras.ExtendedOperation
 }
 
 func NewCreateData(fact CreateDataFact) (CreateData, error) {
-	return CreateData{BaseOperation: common.NewBaseOperation(CreateDataHint, fact)}, nil
+	return CreateData{
+		ExtendedOperation: extras.NewExtendedOperation(CreateDataHint, fact),
+	}, nil
 }

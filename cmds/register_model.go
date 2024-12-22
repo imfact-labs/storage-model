@@ -65,11 +65,8 @@ func (cmd *RegisterModelCommand) createOperation() (base.Operation, error) {
 
 	fact := storage.NewRegisterModelFact([]byte(cmd.Token), cmd.sender, cmd.contract, cmd.Project, cmd.Currency.CID)
 
-	op, err := storage.NewRegisterModel(fact)
-	if err != nil {
-		return nil, e.Wrap(err)
-	}
-	err = op.Sign(cmd.Privatekey, cmd.NetworkID.NetworkID())
+	op := storage.NewRegisterModel(fact)
+	err := op.Sign(cmd.Privatekey, cmd.NetworkID.NetworkID())
 	if err != nil {
 		return nil, e.Wrap(err)
 	}

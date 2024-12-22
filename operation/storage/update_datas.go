@@ -3,6 +3,8 @@ package storage
 import (
 	"fmt"
 	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
+	"github.com/ProtoconNet/mitum-currency/v3/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
@@ -125,10 +127,51 @@ func (fact UpdateDatasFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
+func (fact UpdateDatasFact) FeeBase() map[types.CurrencyID][]common.Big {
+	required := make(map[types.CurrencyID][]common.Big)
+
+	for i := range fact.items {
+		zeroBig := common.ZeroBig
+		cid := fact.items[i].Currency()
+		var amsTemp []common.Big
+		if ams, found := required[cid]; found {
+			ams = append(ams, zeroBig)
+			required[cid] = ams
+		} else {
+			amsTemp = append(amsTemp, zeroBig)
+			required[cid] = amsTemp
+		}
+	}
+
+	return required
+}
+
+func (fact UpdateDatasFact) FeePayer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDatasFact) FactUser() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDatasFact) Signer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDatasFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Address {
+	var arr [][2]mitumbase.Address
+	for i := range fact.items {
+		arr = append(arr, [2]mitumbase.Address{fact.items[i].contract, fact.sender})
+	}
+	return arr
+}
+
 type UpdateDatas struct {
-	common.BaseOperation
+	extras.ExtendedOperation
 }
 
 func NewUpdateDatas(fact UpdateDatasFact) (UpdateDatas, error) {
-	return UpdateDatas{BaseOperation: common.NewBaseOperation(UpdateDatasHint, fact)}, nil
+	return UpdateDatas{
+		ExtendedOperation: extras.NewExtendedOperation(UpdateDatasHint, fact),
+	}, nil
 }

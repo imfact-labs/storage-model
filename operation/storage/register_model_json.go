@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	"github.com/ProtoconNet/mitum-currency/v3/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -50,7 +51,10 @@ func (fact *RegisterModelFact) DecodeJSON(b []byte, enc encoder.Encoder) error {
 }
 
 func (op RegisterModel) MarshalJSON() ([]byte, error) {
-	return util.MarshalJSON(op.BaseOperation.JSONMarshaler())
+	return util.MarshalJSON(OperationMarshaler{
+		BaseOperationJSONMarshaler:           op.BaseOperation.JSONMarshaler(),
+		BaseOperationExtensionsJSONMarshaler: op.BaseOperationExtensions.JSONMarshaler(),
+	})
 }
 
 func (op *RegisterModel) DecodeJSON(b []byte, enc encoder.Encoder) error {
@@ -60,6 +64,13 @@ func (op *RegisterModel) DecodeJSON(b []byte, enc encoder.Encoder) error {
 	}
 
 	op.BaseOperation = ubo
+
+	var ueo extras.BaseOperationExtensions
+	if err := ueo.DecodeJSON(b, enc); err != nil {
+		return common.DecorateError(err, common.ErrDecodeJson, *op)
+	}
+
+	op.BaseOperationExtensions = &ueo
 
 	return nil
 }

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
@@ -129,10 +130,35 @@ func (fact UpdateDataFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
+func (fact UpdateDataFact) FeeBase() map[currencytypes.CurrencyID][]common.Big {
+	required := make(map[currencytypes.CurrencyID][]common.Big)
+	required[fact.Currency()] = []common.Big{common.ZeroBig}
+
+	return required
+}
+
+func (fact UpdateDataFact) FeePayer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDataFact) FactUser() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDataFact) Signer() mitumbase.Address {
+	return fact.sender
+}
+
+func (fact UpdateDataFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Address {
+	return [][2]mitumbase.Address{{fact.contract, fact.sender}}
+}
+
 type UpdateData struct {
-	common.BaseOperation
+	extras.ExtendedOperation
 }
 
 func NewUpdateData(fact UpdateDataFact) (UpdateData, error) {
-	return UpdateData{BaseOperation: common.NewBaseOperation(UpdateDataHint, fact)}, nil
+	return UpdateData{
+		ExtendedOperation: extras.NewExtendedOperation(UpdateDataHint, fact),
+	}, nil
 }

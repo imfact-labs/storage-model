@@ -3,34 +3,32 @@ package digest
 import (
 	"context"
 	"fmt"
-	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
-	stateextension "github.com/ProtoconNet/mitum-currency/v3/state/extension"
 	"sync"
 	"time"
 
+	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
+	"github.com/ProtoconNet/mitum-currency/v3/digest/isaac"
+	ccstate "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	cestate "github.com/ProtoconNet/mitum-currency/v3/state/extension"
+	"github.com/ProtoconNet/mitum2/base"
+	"github.com/ProtoconNet/mitum2/util"
+	"github.com/ProtoconNet/mitum2/util/fixedtree"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/ProtoconNet/mitum-currency/v3/digest/isaac"
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
-
-	mitumbase "github.com/ProtoconNet/mitum2/base"
-	mitumutil "github.com/ProtoconNet/mitum2/util"
-	"github.com/ProtoconNet/mitum2/util/fixedtree"
 )
 
 var bulkWriteLimit = 500
 
 type BlockSession struct {
 	sync.RWMutex
-	block                 mitumbase.BlockMap
-	ops                   []mitumbase.Operation
+	block                 base.BlockMap
+	ops                   []base.Operation
 	opsTree               fixedtree.Tree
-	sts                   []mitumbase.State
-	st                    *currencydigest.Database
-	proposal              mitumbase.ProposalSignFact
-	opsTreeNodes          map[string]mitumbase.OperationFixedtreeNode
+	sts                   []base.State
+	st                    *cdigest.Database
+	proposal              base.ProposalSignFact
+	opsTreeNodes          map[string]base.OperationFixedtreeNode
 	blockModels           []mongo.WriteModel
 	operationModels       []mongo.WriteModel
 	accountModels         []mongo.WriteModel
@@ -45,12 +43,12 @@ type BlockSession struct {
 }
 
 func NewBlockSession(
-	st *currencydigest.Database,
-	blk mitumbase.BlockMap,
-	ops []mitumbase.Operation,
+	st *cdigest.Database,
+	blk base.BlockMap,
+	ops []base.Operation,
 	opstree fixedtree.Tree,
-	sts []mitumbase.State,
-	proposal mitumbase.ProposalSignFact,
+	sts []base.State,
+	proposal base.ProposalSignFact,
 	vs string,
 ) (*BlockSession, error) {
 	if st.Readonly() {
@@ -108,48 +106,48 @@ func (bs *BlockSession) Commit(_ context.Context) error {
 	}()
 
 	_, err := bs.st.MongoClient().WithSession(func(txnCtx mongo.SessionContext, collection func(string) *mongo.Collection) (interface{}, error) {
-		if err := bs.writeModels(txnCtx, defaultColNameBlock, bs.blockModels); err != nil {
+		if err := bs.writeModels(txnCtx, DefaultColNameBlock, bs.blockModels); err != nil {
 			return nil, err
 		}
 
 		if len(bs.operationModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameOperation, bs.operationModels); err != nil {
+			if err := bs.writeModels(txnCtx, cdigest.DefaultColNameOperation, bs.operationModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.currencyModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameCurrency, bs.currencyModels); err != nil {
+			if err := bs.writeModels(txnCtx, cdigest.DefaultColNameCurrency, bs.currencyModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.accountModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameAccount, bs.accountModels); err != nil {
+			if err := bs.writeModels(txnCtx, cdigest.DefaultColNameAccount, bs.accountModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.contractAccountModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameContractAccount, bs.contractAccountModels); err != nil {
+			if err := bs.writeModels(txnCtx, cdigest.DefaultColNameContractAccount, bs.contractAccountModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.balanceModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameBalance, bs.balanceModels); err != nil {
+			if err := bs.writeModels(txnCtx, cdigest.DefaultColNameBalance, bs.balanceModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.storageModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameStorage, bs.storageModels); err != nil {
+			if err := bs.writeModels(txnCtx, DefaultColNameStorage, bs.storageModels); err != nil {
 				return nil, err
 			}
 		}
 
 		if len(bs.storageDataModels) > 0 {
-			if err := bs.writeModels(txnCtx, defaultColNameStorageData, bs.storageDataModels); err != nil {
+			if err := bs.writeModels(txnCtx, DefaultColNameStorageData, bs.storageDataModels); err != nil {
 				return nil, err
 			}
 		}
@@ -168,10 +166,10 @@ func (bs *BlockSession) Close() error {
 }
 
 func (bs *BlockSession) prepareOperationsTree() error {
-	nodes := map[string]mitumbase.OperationFixedtreeNode{}
+	nodes := map[string]base.OperationFixedtreeNode{}
 
 	if err := bs.opsTree.Traverse(func(_ uint64, no fixedtree.Node) (bool, error) {
-		nno := no.(mitumbase.OperationFixedtreeNode)
+		nno := no.(base.OperationFixedtreeNode)
 		if nno.InState() {
 			nodes[nno.Key()] = nno
 		} else {
@@ -205,7 +203,7 @@ func (bs *BlockSession) prepareBlock() error {
 		bs.block.Manifest().ProposedAt(),
 	)
 
-	doc, err := currencydigest.NewManifestDoc(manifest, bs.st.Encoder(), bs.block.Manifest().Height(), bs.ops, bs.block.SignedAt(), bs.proposal.ProposalFact().Proposer(), bs.proposal.ProposalFact().Point().Round(), bs.buildinfo)
+	doc, err := cdigest.NewManifestDoc(manifest, bs.st.Encoder(), bs.block.Manifest().Height(), bs.ops, bs.block.SignedAt(), bs.proposal.ProposalFact().Proposer(), bs.proposal.ProposalFact().Point().Round(), bs.buildinfo)
 	if err != nil {
 		return err
 	}
@@ -219,7 +217,7 @@ func (bs *BlockSession) prepareOperations() error {
 		return nil
 	}
 
-	node := func(h mitumutil.Hash) (bool, bool, mitumbase.OperationProcessReasonError) {
+	node := func(h util.Hash) (bool, bool, base.OperationProcessReasonError) {
 		no, found := bs.opsTreeNodes[h.String()]
 		if !found {
 			return false, false, nil
@@ -233,10 +231,10 @@ func (bs *BlockSession) prepareOperations() error {
 	for i := range bs.ops {
 		op := bs.ops[i]
 
-		var doc currencydigest.OperationDoc
+		var doc cdigest.OperationDoc
 		switch found, inState, reason := node(op.Fact().Hash()); {
 		case !found:
-			return mitumutil.ErrNotFound.Errorf("operation, %v in operations tree", op.Fact().Hash().String())
+			return util.ErrNotFound.Errorf("operation, %v in operations tree", op.Fact().Hash().String())
 		default:
 			var reasonMsg string
 			switch {
@@ -245,7 +243,7 @@ func (bs *BlockSession) prepareOperations() error {
 			default:
 				reasonMsg = reason.Msg()
 			}
-			d, err := currencydigest.NewOperationDoc(
+			d, err := cdigest.NewOperationDoc(
 				op,
 				bs.st.Encoder(),
 				bs.block.Manifest().Height(),
@@ -278,20 +276,20 @@ func (bs *BlockSession) prepareAccounts() error {
 		st := bs.sts[i]
 
 		switch {
-		case statecurrency.IsAccountStateKey(st.Key()):
+		case ccstate.IsAccountStateKey(st.Key()):
 			j, err := bs.handleAccountState(st)
 			if err != nil {
 				return err
 			}
 			accountModels = append(accountModels, j...)
-		case statecurrency.IsBalanceStateKey(st.Key()):
+		case ccstate.IsBalanceStateKey(st.Key()):
 			j, address, err := bs.handleBalanceState(st)
 			if err != nil {
 				return err
 			}
 			balanceModels = append(balanceModels, j...)
 			bs.balanceAddressList = append(bs.balanceAddressList, address)
-		case stateextension.IsStateContractAccountKey(st.Key()):
+		case cestate.IsStateContractAccountKey(st.Key()):
 			j, err := bs.handleContractAccountState(st)
 			if err != nil {
 				return err
@@ -318,7 +316,7 @@ func (bs *BlockSession) prepareCurrencies() error {
 	for i := range bs.sts {
 		st := bs.sts[i]
 		switch {
-		case statecurrency.IsDesignStateKey(st.Key()):
+		case ccstate.IsDesignStateKey(st.Key()):
 			j, err := bs.handleCurrencyState(st)
 			if err != nil {
 				return err

@@ -18,14 +18,9 @@ import (
 var maxLimit int64 = 50
 
 var (
-	defaultColNameAccount         = "digest_ac"
-	defaultColNameContractAccount = "digest_ca"
-	defaultColNameBalance         = "digest_bl"
-	defaultColNameCurrency        = "digest_cr"
-	defaultColNameOperation       = "digest_op"
-	defaultColNameStorage         = "digest_storage"
-	defaultColNameStorageData     = "digest_storage_data"
-	defaultColNameBlock           = "digest_bm"
+	DefaultColNameStorage     = "digest_storage"
+	DefaultColNameStorageData = "digest_storage_data"
+	DefaultColNameBlock       = "digest_bm"
 )
 
 func StorageDesign(st *cdigest.Database, contract string) (types.Design, base.State, error) {
@@ -37,7 +32,7 @@ func StorageDesign(st *cdigest.Database, contract string) (types.Design, base.St
 	)
 	var sta base.State
 	if err := st.MongoClient().GetByFilter(
-		defaultColNameStorage,
+		DefaultColNameStorage,
 		q,
 		func(res *mongo.SingleResult) error {
 			i, err := cdigest.LoadState(res.Decode, st.Encoders())
@@ -78,7 +73,7 @@ func StorageData(db *cdigest.Database, contract, key string) (*types.Data, int64
 	var deleted bool
 	var err error
 	if err := db.MongoClient().GetByFilter(
-		defaultColNameStorageData,
+		DefaultColNameStorageData,
 		q,
 		func(res *mongo.SingleResult) error {
 			data, height, operation, timestamp, deleted, err = LoadStorageData(res.Decode, db.Encoders())
@@ -132,7 +127,7 @@ func SotrageDataHistoryByDataKey(
 
 	return st.MongoClient().Find(
 		context.Background(),
-		defaultColNameStorageData,
+		DefaultColNameStorageData,
 		filter,
 		func(cursor *mongo.Cursor) (bool, error) {
 			data, height, operation, timestamp, deleted, err := LoadStorageData(cursor.Decode, st.Encoders())
@@ -168,7 +163,7 @@ func DataCountByContract(
 
 	var cursor *mongo.Cursor
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	c, err := st.MongoClient().Collection(defaultColNameStorageData).Find(ctx, filter, opts)
+	c, err := st.MongoClient().Collection(DefaultColNameStorageData).Find(ctx, filter, opts)
 	if err != nil {
 		return 0, err
 	} else {

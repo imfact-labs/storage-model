@@ -119,7 +119,7 @@ func (opp *RegisterModelProcessor) Process(
 	if err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError("failed to get state value of contract account, %q; %w", fact.Contract(), err), nil
 	}
-	nca := ca.SetIsActive(true)
+	nca := ca.SetActive(true)
 
 	sts = append(sts, state.NewStateMergeValue(
 		stateextension.StateKeyContractAccount(fact.Contract()),

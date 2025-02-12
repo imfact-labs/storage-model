@@ -38,19 +38,21 @@ func init() {
 
 type Handlers struct {
 	*zerolog.Logger
-	networkID       base.NetworkID
-	encoders        *encoder.Encoders
-	encoder         encoder.Encoder
-	database        *currencydigest.Database
-	cache           currencydigest.Cache
-	nodeInfoHandler currencydigest.NodeInfoHandler
-	send            func(interface{}) (base.Operation, error)
-	client          func() (*quicstream.ConnectionPool, *quicmemberlist.Memberlist, []quicstream.ConnInfo, error)
-	router          *mux.Router
-	routes          map[string]*mux.Route
-	itemsLimiter    func(string) int64
-	rg              *singleflight.Group
-	expireNotFilled time.Duration
+	networkID        base.NetworkID
+	encoders         *encoder.Encoders
+	encoder          encoder.Encoder
+	database         *currencydigest.Database
+	cache            currencydigest.Cache
+	nodeInfoHandler  currencydigest.NodeInfoHandler
+	send             func(interface{}) (base.Operation, error)
+	client           func() (*quicstream.ConnectionPool, *quicmemberlist.Memberlist, []quicstream.ConnInfo, error)
+	router           *mux.Router
+	routes           map[string]*mux.Route
+	itemsLimiter     func(string) int64
+	rg               *singleflight.Group
+	expireNotFilled  time.Duration
+	expireShortLived time.Duration
+	expireLongLived  time.Duration
 }
 
 func NewHandlers(
@@ -69,17 +71,19 @@ func NewHandlers(
 	}
 
 	return &Handlers{
-		Logger:          log.Log(),
-		networkID:       networkID,
-		encoders:        encs,
-		encoder:         enc,
-		database:        st,
-		cache:           cache,
-		router:          router,
-		routes:          routes,
-		itemsLimiter:    currencydigest.DefaultItemsLimiter,
-		rg:              &singleflight.Group{},
-		expireNotFilled: time.Second * 3,
+		Logger:           log.Log(),
+		networkID:        networkID,
+		encoders:         encs,
+		encoder:          enc,
+		database:         st,
+		cache:            cache,
+		router:           router,
+		routes:           routes,
+		itemsLimiter:     currencydigest.DefaultItemsLimiter,
+		rg:               &singleflight.Group{},
+		expireNotFilled:  currencydigest.ExpireFilled,
+		expireShortLived: currencydigest.ExpireShortLived,
+		expireLongLived:  currencydigest.ExpireLongLived,
 	}
 }
 

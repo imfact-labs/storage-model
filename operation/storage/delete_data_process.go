@@ -82,7 +82,7 @@ func (opp *DeleteDataProcessor) PreProcess(
 	if err := state.CheckExistsState(statestr.DesignStateKey(fact.Contract()), getStateFunc); err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
-				Wrap(common.ErrMServiceNF).Errorf("storage service for contract account %v",
+				Wrap(common.ErrMServiceNF).Errorf("storage service state for contract account %v",
 				fact.Contract(),
 			)), nil
 	}

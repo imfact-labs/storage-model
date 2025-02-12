@@ -55,7 +55,7 @@ func (ipp *CreateDatasItemProcessor) PreProcess(
 
 	if err := currencystate.CheckExistsState(state.DesignStateKey(it.Contract()), getStateFunc); err != nil {
 		return e.Wrap(
-			common.ErrServiceNF.Errorf("storage service in contract account %v", it.Contract()))
+			common.ErrServiceNF.Errorf("storage service state for contract account %v", it.Contract()))
 	}
 
 	if found, _ := currencystate.CheckNotExistsState(state.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); found {

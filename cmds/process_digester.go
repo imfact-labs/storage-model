@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+
 	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
 	"github.com/ProtoconNet/mitum-storage/digest"
 	"github.com/ProtoconNet/mitum2/base"
@@ -15,13 +16,19 @@ import (
 
 func ProcessDigester(ctx context.Context) (context.Context, error) {
 	var vs util.Version
-	if err := util.LoadFromContextOK(ctx, launch.VersionContextKey, &vs); err != nil {
+	var log *logging.Logging
+	var digestDesign currencydigest.YamlDigestDesign
+
+	if err := util.LoadFromContextOK(ctx,
+		launch.VersionContextKey, &vs,
+		launch.LoggingContextKey, &log,
+		currencydigest.ContextValueDigestDesign, &digestDesign,
+	); err != nil {
 		return ctx, err
 	}
 
-	var log *logging.Logging
-	if err := util.LoadFromContextOK(ctx, launch.LoggingContextKey, &log); err != nil {
-		return ctx, err
+	if !digestDesign.Digest {
+		return ctx, nil
 	}
 
 	var st *currencydigest.Database
@@ -34,7 +41,9 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 	}
 
 	var design launch.NodeDesign
-	if err := util.LoadFromContext(ctx, launch.DesignContextKey, &design); err != nil {
+	if err := util.LoadFromContext(ctx,
+		launch.DesignContextKey, &design,
+	); err != nil {
 		return ctx, err
 	}
 	root := launch.LocalFSDataDirectory(design.Storage.Base)
@@ -66,10 +75,18 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 
 func ProcessStartDigester(ctx context.Context) (context.Context, error) {
 	var di *digest.Digester
-	if err := util.LoadFromContext(ctx, currencydigest.ContextValueDigester, &di); err != nil {
+	var digestDesign currencydigest.YamlDigestDesign
+
+	if err := util.LoadFromContext(ctx,
+		currencydigest.ContextValueDigester, &di,
+		currencydigest.ContextValueDigestDesign, &digestDesign,
+	); err != nil {
 		return ctx, err
 	}
-	if di == nil {
+
+	if !digestDesign.Digest {
+		return ctx, nil
+	} else if di == nil {
 		return ctx, nil
 	}
 
@@ -85,8 +102,16 @@ func PDigesterFollowUp(ctx context.Context) (context.Context, error) {
 	log.Log().Debug().Msg("digester trying to follow up")
 
 	var mst *isaacdatabase.Center
-	if err := util.LoadFromContextOK(ctx, launch.CenterDatabaseContextKey, &mst); err != nil {
+	var digestDesign currencydigest.YamlDigestDesign
+	if err := util.LoadFromContextOK(ctx,
+		launch.CenterDatabaseContextKey, &mst,
+		currencydigest.ContextValueDigestDesign, &digestDesign,
+	); err != nil {
 		return ctx, err
+	}
+
+	if !digestDesign.Digest {
+		return ctx, nil
 	}
 
 	var st *currencydigest.Database

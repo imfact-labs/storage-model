@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
@@ -154,6 +155,10 @@ func (fact CreateDatasFact) FeeBase() map[currencytypes.CurrencyID][]common.Big 
 
 func (fact CreateDatasFact) FeePayer() mitumbase.Address {
 	return fact.sender
+}
+
+func (fact CreateDatasFact) FeeItemCount() (uint, bool) {
+	return uint(len(fact.items)), extras.HasItem
 }
 
 func (fact CreateDatasFact) FactUser() mitumbase.Address {

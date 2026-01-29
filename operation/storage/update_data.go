@@ -141,6 +141,10 @@ func (fact UpdateDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
 }
 
+func (fact UpdateDataFact) FeeItemCount() (uint, bool) {
+	return extras.ZeroItem, extras.HasNoItem
+}
+
 func (fact UpdateDataFact) FactUser() mitumbase.Address {
 	return fact.sender
 }

@@ -128,6 +128,10 @@ func (fact DeleteDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
 }
 
+func (fact DeleteDataFact) FeeItemCount() (uint, bool) {
+	return extras.ZeroItem, extras.HasNoItem
+}
+
 func (fact DeleteDataFact) FactUser() mitumbase.Address {
 	return fact.sender
 }

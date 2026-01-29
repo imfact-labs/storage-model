@@ -1,46 +1,36 @@
 package digest
 
 import (
+	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
 	"github.com/ProtoconNet/mitum-storage/state"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (bs *BlockSession) prepareStorage() error {
-	if len(bs.sts) < 1 {
-		return nil
-	}
+func PrepareStorage(bs *currencydigest.BlockSession, st mitumbase.State) (string, []mongo.WriteModel, error) {
 
-	var storageModels []mongo.WriteModel
-	var storageDataModels []mongo.WriteModel
-	for i := range bs.sts {
-		st := bs.sts[i]
-		switch {
-		case state.IsDesignStateKey(st.Key()):
-			j, err := bs.handleStorageDesignState(st)
-			if err != nil {
-				return err
-			}
-			storageModels = append(storageModels, j...)
-		case state.IsDataStateKey(st.Key()):
-			j, err := bs.handleStorageDataState(st)
-			if err != nil {
-				return err
-			}
-			storageDataModels = append(storageDataModels, j...)
-		default:
-			continue
+	switch {
+	case state.IsDesignStateKey(st.Key()):
+		j, err := handleStorageDesignState(bs, st)
+		if err != nil {
+			return "", nil, err
 		}
+
+		return DefaultColNameStorage, j, nil
+	case state.IsDataStateKey(st.Key()):
+		j, err := handleStorageDataState(bs, st)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return DefaultColNameStorageData, j, nil
 	}
 
-	bs.storageModels = storageModels
-	bs.storageDataModels = storageDataModels
-
-	return nil
+	return "", nil, nil
 }
 
-func (bs *BlockSession) handleStorageDesignState(st mitumbase.State) ([]mongo.WriteModel, error) {
-	if storageDesignDoc, err := NewStorageDesignDoc(st, bs.st.Encoder()); err != nil {
+func handleStorageDesignState(bs *currencydigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
+	if storageDesignDoc, err := NewStorageDesignDoc(st, bs.Database().Encoder()); err != nil {
 		return nil, err
 	} else {
 		return []mongo.WriteModel{
@@ -49,8 +39,8 @@ func (bs *BlockSession) handleStorageDesignState(st mitumbase.State) ([]mongo.Wr
 	}
 }
 
-func (bs *BlockSession) handleStorageDataState(st mitumbase.State) ([]mongo.WriteModel, error) {
-	if StorageDataDoc, err := NewStorageDataDoc(st, bs.block.Manifest().ProposedAt(), bs.st.Encoder()); err != nil {
+func handleStorageDataState(bs *currencydigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
+	if StorageDataDoc, err := NewStorageDataDoc(st, bs.BlockMap().Manifest().ProposedAt(), bs.Database().Encoder()); err != nil {
 		return nil, err
 	} else {
 		return []mongo.WriteModel{

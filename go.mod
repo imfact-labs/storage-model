@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.9
 
 require (
-	github.com/ProtoconNet/mitum-currency/v3 v3.0.0-alpha.0.20251105025257-22072f1f4b39
+	github.com/ProtoconNet/mitum-currency/v3 v3.0.0-alpha.0.20260129080331-dd8e67920c57
 	github.com/ProtoconNet/mitum2 v0.0.0-20251029064552-48aef1088f5f
 	github.com/alecthomas/kong v1.12.1
 	github.com/arl/statsviz v0.7.1
@@ -75,6 +75,10 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
+	github.com/mr-tron/base58 v1.1.0 // indirect
+	github.com/multiformats/go-base32 v0.0.3 // indirect
+	github.com/multiformats/go-base36 v0.1.0 // indirect
+	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/quic-go v0.54.1 // indirect

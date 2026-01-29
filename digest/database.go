@@ -2,6 +2,8 @@ package digest
 
 import (
 	"context"
+	"strconv"
+
 	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
 	utilc "github.com/ProtoconNet/mitum-currency/v3/digest/util"
 	"github.com/ProtoconNet/mitum-storage/state"
@@ -12,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"strconv"
 )
 
 var maxLimit int64 = 50
@@ -20,7 +21,6 @@ var maxLimit int64 = 50
 var (
 	DefaultColNameStorage     = "digest_storage"
 	DefaultColNameStorageData = "digest_storage_data"
-	DefaultColNameBlock       = "digest_bm"
 )
 
 func StorageDesign(st *cdigest.Database, contract string) (types.Design, base.State, error) {

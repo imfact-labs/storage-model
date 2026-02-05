@@ -15,13 +15,11 @@ import (
 	"github.com/ProtoconNet/mitum2/isaac"
 	isaacstates "github.com/ProtoconNet/mitum2/isaac/states"
 	"github.com/ProtoconNet/mitum2/launch"
-	"github.com/ProtoconNet/mitum2/network/quicmemberlist"
 	"github.com/ProtoconNet/mitum2/network/quicstream"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/logging"
 	"github.com/ProtoconNet/mitum2/util/ps"
 	"github.com/arl/statsviz"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -395,7 +393,7 @@ func (cmd *RunCommand) pDigestAPIHandlers(ctx context.Context) (context.Context,
 		return ctx, nil
 	}
 
-	cache, err := cmd.loadCache(ctx, design)
+	cache, err := currencycmds.LoadCache(cmd.log, ctx, design)
 	if err != nil {
 		return ctx, err
 	}
@@ -407,16 +405,7 @@ func (cmd *RunCommand) pDigestAPIHandlers(ctx context.Context) (context.Context,
 
 	router := dnt.Router()
 
-	defaultHandlers, err := cmd.setDigestAPIDefaultHandlers(ctx, params, cache, router, dnt.Queue())
-	if err != nil {
-		return ctx, err
-	}
-
-	if err := defaultHandlers.Initialize(design.Digest); err != nil {
-		return ctx, err
-	}
-
-	handlers, err := cmd.setDigestHandlers(ctx, params, cache, router, defaultHandlers.Routes())
+	handlers, err := currencycmds.SetDigestAPIDefaultHandlers(cmd.log, ctx, params, cache, router, dnt.Queue())
 	if err != nil {
 		return ctx, err
 	}
@@ -425,123 +414,13 @@ func (cmd *RunCommand) pDigestAPIHandlers(ctx context.Context) (context.Context,
 		return ctx, err
 	}
 
+	handlers.SetEncoders(encs)
+	handlers.SetEncoder(enc)
+
+	currencydigest.SetHandlers(handlers, design.Digest)
+	digest.SetHandlers(handlers)
+
 	dnt.SetEncoder(encs)
 
 	return ctx, nil
-}
-
-func (cmd *RunCommand) loadCache(_ context.Context, design currencydigest.YamlDigestDesign) (currencydigest.Cache, error) {
-	c, err := currencydigest.NewCacheFromURI(design.Cache().String())
-	if err != nil {
-		cmd.log.Err(err).Str("cache", design.Cache().String()).Msg("failed to connect cache server")
-		cmd.log.Warn().Msg("instead of remote cache server, internal mem cache can be available, `memory://`")
-
-		return nil, err
-	}
-	return c, nil
-}
-
-func (cmd *RunCommand) setDigestAPIDefaultHandlers(
-	ctx context.Context,
-	params *launch.LocalParams,
-	cache currencydigest.Cache,
-	router *mux.Router,
-	queue chan currencydigest.RequestWrapper,
-) (*currencydigest.Handlers, error) {
-	var nodeDesign launch.NodeDesign
-	var design currencydigest.YamlDigestDesign
-	var st *currencydigest.Database
-	if err := util.LoadFromContext(ctx,
-		launch.DesignContextKey, &nodeDesign,
-		currencydigest.ContextValueDigestDesign, &design,
-	); err != nil {
-		return nil, err
-	}
-	if design.Digest {
-		if err := util.LoadFromContext(ctx, currencydigest.ContextValueDigestDatabase, &st); err != nil {
-			return nil, err
-		}
-	}
-
-	node, err := quicstream.NewConnInfoFromStringAddr(nodeDesign.Network.PublishString, nodeDesign.Network.TLSInsecure)
-	if err != nil {
-		return nil, err
-	}
-
-	handlers := currencydigest.NewHandlers(ctx, params.ISAAC.NetworkID(), encs, enc, st, cache, router, queue, node)
-
-	h, err := cmd.setDigestAPINetworkClient(ctx, params, handlers)
-	if err != nil {
-		return nil, err
-	}
-	handlers = h
-
-	return handlers, nil
-}
-
-func (cmd *RunCommand) setDigestHandlers(
-	ctx context.Context,
-	params *launch.LocalParams,
-	cache currencydigest.Cache,
-	router *mux.Router,
-	routes map[string]*mux.Route,
-) (*digest.Handlers, error) {
-	var st *currencydigest.Database
-	if err := util.LoadFromContext(ctx, currencydigest.ContextValueDigestDatabase, &st); err != nil {
-		return nil, err
-	}
-
-	handlers := digest.NewHandlers(ctx, params.ISAAC.NetworkID(), encs, enc, st, cache, router, routes)
-
-	return handlers, nil
-}
-
-func (cmd *RunCommand) setDigestAPINetworkClient(
-	ctx context.Context,
-	params *launch.LocalParams,
-	handlers *currencydigest.Handlers,
-) (*currencydigest.Handlers, error) {
-	var memberList *quicmemberlist.Memberlist
-	if err := util.LoadFromContextOK(ctx, launch.MemberlistContextKey, &memberList); err != nil {
-		return nil, err
-	}
-
-	connectionPool, err := launch.NewConnectionPool(
-		1<<9,
-		params.ISAAC.NetworkID(),
-		nil,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	handlers = handlers.SetNetworkClientFunc(
-		func() (*quicstream.ConnectionPool, *quicmemberlist.Memberlist, []quicstream.ConnInfo, error) { // nolint:contextcheck
-			return connectionPool, memberList, []quicstream.ConnInfo{}, nil
-		},
-	)
-
-	var design currencydigest.YamlDigestDesign
-	if err := util.LoadFromContext(ctx, currencydigest.ContextValueDigestDesign, &design); err != nil {
-		if errors.Is(err, util.ErrNotFound) {
-			return handlers, nil
-		}
-
-		return nil, err
-	}
-
-	if design.Equal(currencydigest.YamlDigestDesign{}) {
-		return handlers, nil
-	}
-
-	handlers = handlers.SetNetworkClientFunc(
-		func() (*quicstream.ConnectionPool, *quicmemberlist.Memberlist, []quicstream.ConnInfo, error) { // nolint:contextcheck
-			return connectionPool, memberList, design.ConnInfo, nil
-		},
-	)
-
-	cmd.log.Debug().Msg("send handler attached")
-
-	return handlers, nil
 }

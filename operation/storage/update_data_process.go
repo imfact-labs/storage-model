@@ -2,14 +2,14 @@ package storage
 
 import (
 	"context"
-	"github.com/ProtoconNet/mitum-currency/v3/common"
-	"github.com/ProtoconNet/mitum-currency/v3/state"
-	crtypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	statetstr "github.com/ProtoconNet/mitum-storage/state"
-	"github.com/ProtoconNet/mitum-storage/types"
 	"sync"
 
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum-currency/v3/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	crtypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	statestrg "github.com/ProtoconNet/mitum-storage/state"
+	"github.com/ProtoconNet/mitum-storage/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 )
@@ -74,12 +74,12 @@ func (opp *UpdateDataProcessor) PreProcess(
 				Errorf("%v", err)), nil
 	}
 
-	if err := state.CheckExistsState(statecurrency.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statec.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
 		return ctx, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.Wrap(common.ErrMCurrencyNF).Errorf("currency id %v", fact.Currency())), nil
 	}
 
-	if err := state.CheckExistsState(statetstr.DesignStateKey(fact.Contract()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statestrg.DesignStateKey(fact.Contract()), getStateFunc); err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Wrap(common.ErrMServiceNF).Errorf("storage service state for contract account %v",
@@ -87,7 +87,7 @@ func (opp *UpdateDataProcessor) PreProcess(
 			)), nil
 	}
 
-	if err := state.CheckExistsState(statetstr.DataStateKey(fact.Contract(), fact.DataKey()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statestrg.DataStateKey(fact.Contract(), fact.DataKey()), getStateFunc); err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Wrap(common.ErrMStateNF).Errorf(
@@ -120,8 +120,8 @@ func (opp *UpdateDataProcessor) Process( // nolint:dupl
 
 	var sts []mitumbase.StateMergeValue // nolint:prealloc
 	sts = append(sts, state.NewStateMergeValue(
-		statetstr.DataStateKey(fact.Contract(), fact.DataKey()),
-		statetstr.NewDataStateValue(stData),
+		statestrg.DataStateKey(fact.Contract(), fact.DataKey()),
+		statestrg.NewDataStateValue(stData),
 	))
 
 	return sts, nil, nil

@@ -1,13 +1,13 @@
 package digest
 
 import (
-	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
+	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
 	"github.com/ProtoconNet/mitum-storage/state"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func PrepareStorage(bs *currencydigest.BlockSession, st mitumbase.State) (string, []mongo.WriteModel, error) {
+func PrepareStorage(bs *cdigest.BlockSession, st mitumbase.State) (string, []mongo.WriteModel, error) {
 
 	switch {
 	case state.IsDesignStateKey(st.Key()):
@@ -29,7 +29,7 @@ func PrepareStorage(bs *currencydigest.BlockSession, st mitumbase.State) (string
 	return "", nil, nil
 }
 
-func handleStorageDesignState(bs *currencydigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
+func handleStorageDesignState(bs *cdigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
 	if storageDesignDoc, err := NewStorageDesignDoc(st, bs.Database().Encoder()); err != nil {
 		return nil, err
 	} else {
@@ -39,7 +39,7 @@ func handleStorageDesignState(bs *currencydigest.BlockSession, st mitumbase.Stat
 	}
 }
 
-func handleStorageDataState(bs *currencydigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
+func handleStorageDataState(bs *cdigest.BlockSession, st mitumbase.State) ([]mongo.WriteModel, error) {
 	if StorageDataDoc, err := NewStorageDataDoc(st, bs.BlockMap().Manifest().ProposedAt(), bs.Database().Encoder()); err != nil {
 		return nil, err
 	} else {

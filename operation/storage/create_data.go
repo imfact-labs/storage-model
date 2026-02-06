@@ -3,7 +3,7 @@ package storage
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -23,12 +23,12 @@ type CreateDataFact struct {
 	contract  base.Address
 	dataKey   string
 	dataValue string
-	currency  currencytypes.CurrencyID
+	currency  ctypes.CurrencyID
 }
 
 func NewCreateDataFact(
 	token []byte, sender, contract base.Address,
-	key, value string, currency currencytypes.CurrencyID) CreateDataFact {
+	key, value string, currency ctypes.CurrencyID) CreateDataFact {
 	bf := base.NewBaseFact(CreateDataFactHint, token)
 	fact := CreateDataFact{
 		BaseFact:  bf,
@@ -50,7 +50,7 @@ func (fact CreateDataFact) IsValid(b []byte) error {
 				errors.Errorf("invalid data key length %v < 1 or %v > %v", len(fact.dataKey), len(fact.dataKey), types.MaxKeyLen)))
 	}
 
-	if !currencytypes.ReValidSpcecialCh.Match([]byte(fact.dataKey)) {
+	if !ctypes.ReValidSpcecialCh.Match([]byte(fact.dataKey)) {
 		return common.ErrFactInvalid.Wrap(common.ErrValueInvalid.Wrap(errors.Errorf("date key %s, must match regex `^[^\\s:/?#\\[\\]$@]*$`", fact.dataKey)))
 	}
 
@@ -120,7 +120,7 @@ func (fact CreateDataFact) DataValue() string {
 	return fact.dataValue
 }
 
-func (fact CreateDataFact) Currency() currencytypes.CurrencyID {
+func (fact CreateDataFact) Currency() ctypes.CurrencyID {
 	return fact.currency
 }
 
@@ -130,8 +130,8 @@ func (fact CreateDataFact) Addresses() ([]base.Address, error) {
 	return as, nil
 }
 
-func (fact CreateDataFact) FeeBase() map[currencytypes.CurrencyID][]common.Big {
-	required := make(map[currencytypes.CurrencyID][]common.Big)
+func (fact CreateDataFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
+	required := make(map[ctypes.CurrencyID][]common.Big)
 	required[fact.Currency()] = []common.Big{common.ZeroBig}
 
 	return required

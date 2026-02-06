@@ -6,12 +6,11 @@ import (
 
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/state"
-	stateextension "github.com/ProtoconNet/mitum-currency/v3/state/extension"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	statestorage "github.com/ProtoconNet/mitum-storage/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	statee "github.com/ProtoconNet/mitum-currency/v3/state/extension"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	statestrg "github.com/ProtoconNet/mitum-storage/state"
 	"github.com/ProtoconNet/mitum-storage/types"
-
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/pkg/errors"
@@ -27,7 +26,7 @@ type RegisterModelProcessor struct {
 	*mitumbase.BaseOperationProcessor
 }
 
-func NewRegisterModelProcessor() currencytypes.GetNewProcessor {
+func NewRegisterModelProcessor() ctypes.GetNewProcessor {
 	return func(
 		height mitumbase.Height,
 		getStateFunc mitumbase.GetStateFunc,
@@ -71,12 +70,12 @@ func (opp *RegisterModelProcessor) PreProcess(
 				Errorf("%v", err)), nil
 	}
 
-	if err := state.CheckExistsState(statecurrency.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statec.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
 		return ctx, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.Wrap(common.ErrMCurrencyNF).Errorf("currency id, %v", fact.Currency())), nil
 	}
 
-	if found, _ := state.CheckNotExistsState(statestorage.DesignStateKey(fact.Contract()), getStateFunc); found {
+	if found, _ := state.CheckNotExistsState(statestrg.DesignStateKey(fact.Contract()), getStateFunc); found {
 		return ctx, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Wrap(common.ErrMServiceE).Errorf("storage service for contract account %v",
@@ -106,16 +105,16 @@ func (opp *RegisterModelProcessor) Process(
 	}
 
 	sts = append(sts, state.NewStateMergeValue(
-		statestorage.DesignStateKey(fact.Contract()),
-		statestorage.NewDesignStateValue(design),
+		statestrg.DesignStateKey(fact.Contract()),
+		statestrg.NewDesignStateValue(design),
 	))
 
-	st, err := state.ExistsState(stateextension.StateKeyContractAccount(fact.Contract()), "contract account", getStateFunc)
+	st, err := state.ExistsState(statee.StateKeyContractAccount(fact.Contract()), "contract account", getStateFunc)
 	if err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError("contract account not found, %q; %w", fact.Contract(), err), nil
 	}
 
-	ca, err := stateextension.StateContractAccountValue(st)
+	ca, err := statee.StateContractAccountValue(st)
 	if err != nil {
 		return nil, mitumbase.NewBaseOperationProcessReasonError("failed to get state value of contract account, %q; %w", fact.Contract(), err), nil
 	}
@@ -124,8 +123,8 @@ func (opp *RegisterModelProcessor) Process(
 	ca.SetRegisterOperation(&h)
 
 	sts = append(sts, state.NewStateMergeValue(
-		stateextension.StateKeyContractAccount(fact.Contract()),
-		stateextension.NewContractAccountStateValue(ca),
+		statee.StateKeyContractAccount(fact.Contract()),
+		statee.NewContractAccountStateValue(ca),
 	))
 
 	return sts, nil, nil

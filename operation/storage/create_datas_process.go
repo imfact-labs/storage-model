@@ -5,10 +5,10 @@ import (
 	"sync"
 
 	"github.com/ProtoconNet/mitum-currency/v3/common"
-	currencystate "github.com/ProtoconNet/mitum-currency/v3/state"
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	"github.com/ProtoconNet/mitum-storage/state"
+	"github.com/ProtoconNet/mitum-currency/v3/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	statestrg "github.com/ProtoconNet/mitum-storage/state"
 	"github.com/ProtoconNet/mitum-storage/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -49,16 +49,16 @@ func (ipp *CreateDatasItemProcessor) PreProcess(
 		return e.Wrap(err)
 	}
 
-	if err := currencystate.CheckExistsState(statecurrency.DesignStateKey(it.Currency()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statec.DesignStateKey(it.Currency()), getStateFunc); err != nil {
 		return e.Wrap(common.ErrCurrencyNF.Wrap(errors.Errorf("currency id %v", it.Currency())))
 	}
 
-	if err := currencystate.CheckExistsState(state.DesignStateKey(it.Contract()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statestrg.DesignStateKey(it.Contract()), getStateFunc); err != nil {
 		return e.Wrap(
 			common.ErrServiceNF.Errorf("storage service state for contract account %v", it.Contract()))
 	}
 
-	if found, _ := currencystate.CheckNotExistsState(state.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); found {
+	if found, _ := state.CheckNotExistsState(statestrg.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); found {
 		return e.Wrap(
 			common.ErrStateE.Errorf(
 				"storage data for key %q in contract account %v",
@@ -70,7 +70,7 @@ func (ipp *CreateDatasItemProcessor) PreProcess(
 }
 
 func (ipp *CreateDatasItemProcessor) Process(
-	_ context.Context, _ base.Operation, getStateFunc base.GetStateFunc,
+	_ context.Context, _ base.Operation, _ base.GetStateFunc,
 ) ([]base.StateMergeValue, error) {
 	it := ipp.item
 
@@ -82,9 +82,9 @@ func (ipp *CreateDatasItemProcessor) Process(
 		return nil, err
 	}
 
-	sts = append(sts, currencystate.NewStateMergeValue(
-		state.DataStateKey(it.Contract(), it.DataKey()),
-		state.NewDataStateValue(data),
+	sts = append(sts, state.NewStateMergeValue(
+		statestrg.DataStateKey(it.Contract(), it.DataKey()),
+		statestrg.NewDataStateValue(data),
 	))
 
 	return sts, nil
@@ -102,7 +102,7 @@ type CreateDatasProcessor struct {
 	*base.BaseOperationProcessor
 }
 
-func NewCreateDatasProcessor() currencytypes.GetNewProcessor {
+func NewCreateDatasProcessor() ctypes.GetNewProcessor {
 	return func(
 		height base.Height,
 		getStateFunc base.GetStateFunc,
@@ -207,50 +207,4 @@ func (opp *CreateDatasProcessor) Close() error {
 	createDatasProcessorPool.Put(opp)
 
 	return nil
-}
-
-func calculateDIDItemsFee(getStateFunc base.GetStateFunc, items []DataItem) (
-	map[currencytypes.CurrencyID]base.State, map[currencytypes.CurrencyID][2]common.Big, error) {
-	feeReceiveSts := map[currencytypes.CurrencyID]base.State{}
-	required := map[currencytypes.CurrencyID][2]common.Big{}
-
-	for _, item := range items {
-		rq := [2]common.Big{common.ZeroBig, common.ZeroBig}
-
-		if k, found := required[item.Currency()]; found {
-			rq = k
-		}
-
-		policy, err := currencystate.ExistsCurrencyPolicy(item.Currency(), getStateFunc)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		switch k, err := policy.Feeer().Fee(common.ZeroBig); {
-		case err != nil:
-			return nil, nil, err
-		case !k.OverZero():
-			required[item.Currency()] = [2]common.Big{rq[0], rq[1]}
-		default:
-			required[item.Currency()] = [2]common.Big{rq[0].Add(k), rq[1].Add(k)}
-		}
-
-		if policy.Feeer().Receiver() == nil {
-			continue
-		}
-
-		if err := currencystate.CheckExistsState(statecurrency.AccountStateKey(policy.Feeer().Receiver()), getStateFunc); err != nil {
-			return nil, nil, err
-		} else if st, found, err := getStateFunc(statecurrency.BalanceStateKey(policy.Feeer().Receiver(), item.Currency())); err != nil {
-			return nil, nil, err
-		} else if !found {
-			return nil, nil, errors.Errorf("feeer receiver account not found, %s", policy.Feeer().Receiver())
-		} else {
-			feeReceiveSts[item.Currency()] = st
-		}
-
-	}
-
-	return feeReceiveSts, required, nil
-
 }

@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/encoder"
@@ -11,10 +11,10 @@ import (
 
 type UpdateDatasItemJSONMarshaler struct {
 	hint.BaseHinter
-	Contract  base.Address             `json:"contract"`
-	DataKey   string                   `json:"dataKey"`
-	DataValue string                   `json:"dataValue"`
-	Currency  currencytypes.CurrencyID `json:"currency"`
+	Contract  base.Address      `json:"contract"`
+	DataKey   string            `json:"dataKey"`
+	DataValue string            `json:"dataValue"`
+	Currency  ctypes.CurrencyID `json:"currency"`
 }
 
 func (it UpdateDatasItem) MarshalJSON() ([]byte, error) {

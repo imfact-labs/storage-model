@@ -2,14 +2,14 @@ package storage
 
 import (
 	"context"
+	"sync"
+
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
 	crtypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	statestr "github.com/ProtoconNet/mitum-storage/state"
 	"github.com/ProtoconNet/mitum-storage/types"
-	"sync"
-
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 )
@@ -74,7 +74,7 @@ func (opp *DeleteDataProcessor) PreProcess(
 				Errorf("%v", err)), nil
 	}
 
-	if err := state.CheckExistsState(statecurrency.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statec.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
 		return ctx, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.Wrap(common.ErrMCurrencyNF).Errorf("currency id %v", fact.Currency())), nil
 	}

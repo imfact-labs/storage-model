@@ -1,6 +1,8 @@
 package digest
 
 import (
+	"time"
+
 	mongodb "github.com/ProtoconNet/mitum-currency/v3/digest/mongodb"
 	bsonutil "github.com/ProtoconNet/mitum-currency/v3/digest/util/bson"
 	cstate "github.com/ProtoconNet/mitum-currency/v3/state"
@@ -9,7 +11,6 @@ import (
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util/encoder"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"time"
 )
 
 type StorageDesignDoc struct {

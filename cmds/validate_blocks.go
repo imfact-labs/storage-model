@@ -2,8 +2,8 @@ package cmds
 
 import (
 	"context"
-	currencycmds "github.com/ProtoconNet/mitum-currency/v3/cmds"
 
+	ccmds "github.com/ProtoconNet/mitum-currency/v3/cmds"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/isaac"
 	isaacblock "github.com/ProtoconNet/mitum2/isaac/block"
@@ -77,7 +77,7 @@ func (cmd *ValidateBlocksCommand) Run(pctx context.Context) error {
 	_ = pps.SetLogging(log)
 
 	_ = pps.
-		AddOK(launch.PNameEncoder, currencycmds.PEncoder, nil).
+		AddOK(launch.PNameEncoder, ccmds.PEncoder, nil).
 		AddOK(launch.PNameDesign, launch.PLoadDesign, nil, launch.PNameEncoder).
 		AddOK(launch.PNameLocal, launch.PLocal, nil, launch.PNameDesign).
 		AddOK(launch.PNameBlockItemReaders, launch.PBlockItemReaders, nil, launch.PNameDesign).

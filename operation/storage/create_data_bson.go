@@ -1,13 +1,12 @@
 package storage
 
 import (
-	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	"go.mongodb.org/mongo-driver/v2/bson"
-
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	bsonenc "github.com/ProtoconNet/mitum-currency/v3/digest/util/bson"
+	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	"github.com/ProtoconNet/mitum2/util/hint"
 	"github.com/ProtoconNet/mitum2/util/valuehash"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func (fact CreateDataFact) MarshalBSON() ([]byte, error) {

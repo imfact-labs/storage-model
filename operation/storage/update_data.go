@@ -3,7 +3,7 @@ package storage
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -23,12 +23,12 @@ type UpdateDataFact struct {
 	contract  mitumbase.Address
 	dataKey   string
 	dataValue string
-	currency  currencytypes.CurrencyID
+	currency  ctypes.CurrencyID
 }
 
 func NewUpdateDataFact(
 	token []byte, sender, contract mitumbase.Address,
-	key, value string, currency currencytypes.CurrencyID) UpdateDataFact {
+	key, value string, currency ctypes.CurrencyID) UpdateDataFact {
 	bf := mitumbase.NewBaseFact(UpdateDataFactHint, token)
 	fact := UpdateDataFact{
 		BaseFact:  bf,
@@ -50,7 +50,7 @@ func (fact UpdateDataFact) IsValid(b []byte) error {
 				errors.Errorf("invalid data key length %v < 1 or %v > %v", len(fact.dataKey), len(fact.dataKey), types.MaxKeyLen)))
 	}
 
-	if !currencytypes.ReValidSpcecialCh.Match([]byte(fact.dataKey)) {
+	if !ctypes.ReValidSpcecialCh.Match([]byte(fact.dataKey)) {
 		return common.ErrFactInvalid.Wrap(common.ErrValueInvalid.Wrap(errors.Errorf("date key %s, must match regex `^[^\\s:/?#\\[\\]$@]*$`", fact.dataKey)))
 	}
 
@@ -120,7 +120,7 @@ func (fact UpdateDataFact) DataValue() string {
 	return fact.dataValue
 }
 
-func (fact UpdateDataFact) Currency() currencytypes.CurrencyID {
+func (fact UpdateDataFact) Currency() ctypes.CurrencyID {
 	return fact.currency
 }
 
@@ -130,8 +130,8 @@ func (fact UpdateDataFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
-func (fact UpdateDataFact) FeeBase() map[currencytypes.CurrencyID][]common.Big {
-	required := make(map[currencytypes.CurrencyID][]common.Big)
+func (fact UpdateDataFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
+	required := make(map[ctypes.CurrencyID][]common.Big)
 	required[fact.Currency()] = []common.Big{common.ZeroBig}
 
 	return required

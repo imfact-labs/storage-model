@@ -2,23 +2,24 @@ package processor
 
 import (
 	"fmt"
+
 	"github.com/ProtoconNet/mitum-currency/v3/operation/currency"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extension"
-	currencyprocessor "github.com/ProtoconNet/mitum-currency/v3/operation/processor"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	cprocessor "github.com/ProtoconNet/mitum-currency/v3/operation/processor"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/operation/storage"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/pkg/errors"
 )
 
 const (
-	DuplicationTypeSender      currencytypes.DuplicationType = "sender"
-	DuplicationTypeCurrency    currencytypes.DuplicationType = "currency"
-	DuplicationTypeContract    currencytypes.DuplicationType = "contract"
-	DuplicationTypeStorageData currencytypes.DuplicationType = "storagedata"
+	DuplicationTypeSender      ctypes.DuplicationType = "sender"
+	DuplicationTypeCurrency    ctypes.DuplicationType = "currency"
+	DuplicationTypeContract    ctypes.DuplicationType = "contract"
+	DuplicationTypeStorageData ctypes.DuplicationType = "storagedata"
 )
 
-func CheckDuplication(opr *currencyprocessor.OperationProcessor, op mitumbase.Operation) error {
+func CheckDuplication(opr *cprocessor.OperationProcessor, op mitumbase.Operation) error {
 	opr.Lock()
 	defer opr.Unlock()
 
@@ -39,31 +40,31 @@ func CheckDuplication(opr *currencyprocessor.OperationProcessor, op mitumbase.Op
 			return errors.Errorf("failed to get Addresses")
 		}
 		newAddresses = as
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 	case currency.UpdateKey:
 		fact, ok := t.Fact().(currency.UpdateKeyFact)
 		if !ok {
 			return errors.Errorf("expected UpdateKeyFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 	case currency.Transfer:
 		fact, ok := t.Fact().(currency.TransferFact)
 		if !ok {
 			return errors.Errorf("expected TransferFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 	case currency.RegisterCurrency:
 		fact, ok := t.Fact().(currency.RegisterCurrencyFact)
 		if !ok {
 			return errors.Errorf("expected RegisterCurrencyFact, not %T", t.Fact())
 		}
-		duplicationTypeCurrencyID = currencyprocessor.DuplicationKey(fact.Currency().Currency().String(), DuplicationTypeCurrency)
+		duplicationTypeCurrencyID = cprocessor.DuplicationKey(fact.Currency().Currency().String(), DuplicationTypeCurrency)
 	case currency.UpdateCurrency:
 		fact, ok := t.Fact().(currency.UpdateCurrencyFact)
 		if !ok {
 			return errors.Errorf("expected UpdateCurrencyFact, not %T", t.Fact())
 		}
-		duplicationTypeCurrencyID = currencyprocessor.DuplicationKey(fact.Currency().String(), DuplicationTypeCurrency)
+		duplicationTypeCurrencyID = cprocessor.DuplicationKey(fact.Currency().String(), DuplicationTypeCurrency)
 	case currency.Mint:
 	case extension.CreateContractAccount:
 		fact, ok := t.Fact().(extension.CreateContractAccountFact)
@@ -75,54 +76,54 @@ func CheckDuplication(opr *currencyprocessor.OperationProcessor, op mitumbase.Op
 			return errors.Errorf("failed to get Addresses")
 		}
 		newAddresses = as
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeContractID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeContract)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeContractID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeContract)
 	case extension.Withdraw:
 		fact, ok := t.Fact().(extension.WithdrawFact)
 		if !ok {
 			return errors.Errorf("expected WithdrawFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 	case storage.RegisterModel:
 		fact, ok := t.Fact().(storage.RegisterModelFact)
 		if !ok {
 			return errors.Errorf("expected RegisterModelFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeContractID = currencyprocessor.DuplicationKey(fact.Contract().String(), DuplicationTypeContract)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeContractID = cprocessor.DuplicationKey(fact.Contract().String(), DuplicationTypeContract)
 	case storage.CreateData:
 		fact, ok := t.Fact().(storage.CreateDataFact)
 		if !ok {
 			return errors.Errorf("expected CreateDataFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeStorageData = []string{currencyprocessor.DuplicationKey(
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
 			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
 	case storage.UpdateData:
 		fact, ok := t.Fact().(storage.UpdateDataFact)
 		if !ok {
 			return errors.Errorf("expected UpdateDataFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeStorageData = []string{currencyprocessor.DuplicationKey(
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
 			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
 	case storage.DeleteData:
 		fact, ok := t.Fact().(storage.DeleteDataFact)
 		if !ok {
 			return errors.Errorf("expected DeleteDataFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeStorageData = []string{currencyprocessor.DuplicationKey(
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
 			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
 	case storage.CreateDatas:
 		fact, ok := t.Fact().(storage.CreateDatasFact)
 		if !ok {
 			return errors.Errorf("expected CreateDatasFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		var datas []string
 		for _, v := range fact.Items() {
-			key := currencyprocessor.DuplicationKey(fmt.Sprintf("%s:%s", v.Contract().String(), v.DataKey()), DuplicationTypeStorageData)
+			key := cprocessor.DuplicationKey(fmt.Sprintf("%s:%s", v.Contract().String(), v.DataKey()), DuplicationTypeStorageData)
 			datas = append(datas, key)
 		}
 		duplicationTypeStorageData = datas
@@ -131,10 +132,10 @@ func CheckDuplication(opr *currencyprocessor.OperationProcessor, op mitumbase.Op
 		if !ok {
 			return errors.Errorf("expected UpdateDatasFact, not %T", t.Fact())
 		}
-		duplicationTypeSenderID = currencyprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
+		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		var datas []string
 		for _, v := range fact.Items() {
-			key := currencyprocessor.DuplicationKey(fmt.Sprintf("%s:%s", v.Contract().String(), v.DataKey()), DuplicationTypeStorageData)
+			key := cprocessor.DuplicationKey(fmt.Sprintf("%s:%s", v.Contract().String(), v.DataKey()), DuplicationTypeStorageData)
 			datas = append(datas, key)
 		}
 		duplicationTypeStorageData = datas
@@ -191,7 +192,7 @@ func CheckDuplication(opr *currencyprocessor.OperationProcessor, op mitumbase.Op
 	return nil
 }
 
-func GetNewProcessor(opr *currencyprocessor.OperationProcessor, op mitumbase.Operation) (mitumbase.OperationProcessor, bool, error) {
+func GetNewProcessor(opr *cprocessor.OperationProcessor, op mitumbase.Operation) (mitumbase.OperationProcessor, bool, error) {
 	switch i, err := opr.GetNewProcessorFromHintset(op); {
 	case err != nil:
 		return nil, false, err

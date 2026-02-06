@@ -3,8 +3,8 @@ package storage
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	"github.com/ProtoconNet/mitum-currency/v3/types"
-	strtypes "github.com/ProtoconNet/mitum-storage/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	"github.com/ProtoconNet/mitum-storage/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
@@ -22,10 +22,10 @@ type RegisterModelFact struct {
 	sender   mitumbase.Address
 	contract mitumbase.Address
 	project  string
-	currency types.CurrencyID
+	currency ctypes.CurrencyID
 }
 
-func NewRegisterModelFact(token []byte, sender, contract mitumbase.Address, project string, currency types.CurrencyID) RegisterModelFact {
+func NewRegisterModelFact(token []byte, sender, contract mitumbase.Address, project string, currency ctypes.CurrencyID) RegisterModelFact {
 	bf := mitumbase.NewBaseFact(RegisterModelFactHint, token)
 	fact := RegisterModelFact{
 		BaseFact: bf,
@@ -56,9 +56,9 @@ func (fact RegisterModelFact) IsValid(b []byte) error {
 		return common.ErrFactInvalid.Wrap(err)
 	}
 
-	if len(fact.project) > strtypes.MaxProjectIDLen {
+	if len(fact.project) > types.MaxProjectIDLen {
 		return common.ErrValOOR.Wrap(
-			errors.Errorf("project length over allowed, %d > %d", len(fact.project), strtypes.MaxProjectIDLen))
+			errors.Errorf("project length over allowed, %d > %d", len(fact.project), types.MaxProjectIDLen))
 	}
 
 	if err := common.IsValidOperationFact(fact, b); err != nil {
@@ -106,12 +106,12 @@ func (fact RegisterModelFact) Project() string {
 	return fact.project
 }
 
-func (fact RegisterModelFact) Currency() types.CurrencyID {
+func (fact RegisterModelFact) Currency() ctypes.CurrencyID {
 	return fact.currency
 }
 
-func (fact RegisterModelFact) FeeBase() map[types.CurrencyID][]common.Big {
-	required := make(map[types.CurrencyID][]common.Big)
+func (fact RegisterModelFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
+	required := make(map[ctypes.CurrencyID][]common.Big)
 	required[fact.Currency()] = []common.Big{common.ZeroBig}
 
 	return required

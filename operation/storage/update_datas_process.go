@@ -5,10 +5,10 @@ import (
 	"sync"
 
 	"github.com/ProtoconNet/mitum-currency/v3/common"
-	currencystate "github.com/ProtoconNet/mitum-currency/v3/state"
-	statecurrency "github.com/ProtoconNet/mitum-currency/v3/state/currency"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	"github.com/ProtoconNet/mitum-storage/state"
+	"github.com/ProtoconNet/mitum-currency/v3/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	statestrg "github.com/ProtoconNet/mitum-storage/state"
 	"github.com/ProtoconNet/mitum-storage/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -49,16 +49,16 @@ func (ipp *UpdateDatasItemProcessor) PreProcess(
 		return e.Wrap(err)
 	}
 
-	if err := currencystate.CheckExistsState(statecurrency.DesignStateKey(it.Currency()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statec.DesignStateKey(it.Currency()), getStateFunc); err != nil {
 		return e.Wrap(common.ErrCurrencyNF.Wrap(errors.Errorf("currency id %v", it.Currency())))
 	}
 
-	if err := currencystate.CheckExistsState(state.DesignStateKey(it.Contract()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statestrg.DesignStateKey(it.Contract()), getStateFunc); err != nil {
 		return e.Wrap(
 			common.ErrServiceNF.Errorf("storage service state for contract account %v", it.Contract()))
 	}
 
-	if err := currencystate.CheckExistsState(state.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); err != nil {
+	if err := state.CheckExistsState(statestrg.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); err != nil {
 		return e.Wrap(
 			common.ErrStateNF.Errorf(
 				"storage data for key %q in contract account %v",
@@ -82,9 +82,9 @@ func (ipp *UpdateDatasItemProcessor) Process(
 		return nil, err
 	}
 
-	sts = append(sts, currencystate.NewStateMergeValue(
-		state.DataStateKey(it.Contract(), it.DataKey()),
-		state.NewDataStateValue(data),
+	sts = append(sts, state.NewStateMergeValue(
+		statestrg.DataStateKey(it.Contract(), it.DataKey()),
+		statestrg.NewDataStateValue(data),
 	))
 
 	return sts, nil
@@ -102,7 +102,7 @@ type UpdateDatasProcessor struct {
 	*base.BaseOperationProcessor
 }
 
-func NewUpdateDatasProcessor() currencytypes.GetNewProcessor {
+func NewUpdateDatasProcessor() ctypes.GetNewProcessor {
 	return func(
 		height base.Height,
 		getStateFunc base.GetStateFunc,

@@ -5,7 +5,7 @@ import (
 
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
@@ -16,7 +16,7 @@ import (
 type DataItem interface {
 	util.Byter
 	util.IsValider
-	Currency() currencytypes.CurrencyID
+	Currency() ctypes.CurrencyID
 }
 
 var CreateDatasItems uint = 100
@@ -134,8 +134,8 @@ func (fact CreateDatasFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
-func (fact CreateDatasFact) FeeBase() map[currencytypes.CurrencyID][]common.Big {
-	required := make(map[currencytypes.CurrencyID][]common.Big)
+func (fact CreateDatasFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
+	required := make(map[ctypes.CurrencyID][]common.Big)
 
 	for i := range fact.items {
 		zeroBig := common.ZeroBig

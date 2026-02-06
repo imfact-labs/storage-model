@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-storage/types"
-	"strings"
-
 	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 var (

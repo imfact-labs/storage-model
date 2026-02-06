@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
 	"github.com/ProtoconNet/mitum2/base"
 	mitumutil "github.com/ProtoconNet/mitum2/util"
@@ -14,13 +14,13 @@ import (
 )
 
 var (
-	HandlerPathStorageDesign      = `/storage/{contract:(?i)` + currencytypes.REStringAddressString + `}`
-	HandlerPathStorageData        = `/storage/{contract:(?i)` + currencytypes.REStringAddressString + `}/datakey/{data_key:` + currencytypes.ReSpecialCh + `}`
-	HandlerPathStorageDataHistory = `/storage/{contract:(?i)` + currencytypes.REStringAddressString + `}/datakey/{data_key:` + currencytypes.ReSpecialCh + `}/history`
-	HandlerPathStorageDataCount   = `/storage/{contract:(?i)` + currencytypes.REStringAddressString + `}/datacount`
+	HandlerPathStorageDesign      = `/storage/{contract:(?i)` + ctypes.REStringAddressString + `}`
+	HandlerPathStorageData        = `/storage/{contract:(?i)` + ctypes.REStringAddressString + `}/datakey/{data_key:` + ctypes.ReSpecialCh + `}`
+	HandlerPathStorageDataHistory = `/storage/{contract:(?i)` + ctypes.REStringAddressString + `}/datakey/{data_key:` + ctypes.ReSpecialCh + `}/history`
+	HandlerPathStorageDataCount   = `/storage/{contract:(?i)` + ctypes.REStringAddressString + `}/datacount`
 )
 
-func SetHandlers(hd *currencydigest.Handlers) {
+func SetHandlers(hd *cdigest.Handlers) {
 	get := 1000
 	_ = hd.SetHandler(HandlerPathStorageData, HandleStorageData, true, get, get).
 		Methods(http.MethodOptions, "GET")
@@ -32,33 +32,33 @@ func SetHandlers(hd *currencydigest.Handlers) {
 		Methods(http.MethodOptions, "GET")
 }
 
-func HandleStorageDesign(hd *currencydigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDesign(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cacheKey := currencydigest.CacheKeyPath(r)
-	if err := currencydigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
+	cacheKey := cdigest.CacheKeyPath(r)
+	if err := cdigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
 		return
 	}
 
-	contract, err, status := currencydigest.ParseRequest(w, r, "contract")
+	contract, err, status := cdigest.ParseRequest(w, r, "contract")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
 	if v, err, shared := hd.RG().Do(cacheKey, func() (interface{}, error) {
 		return handleStorageDesignInGroup(hd, contract)
 	}); err != nil {
-		currencydigest.HTTP2HandleError(w, err)
+		cdigest.HTTP2HandleError(w, err)
 	} else {
-		currencydigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+		cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 		if !shared {
-			currencydigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
+			cdigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
 		}
 	}
 }
 
-func handleStorageDesignInGroup(hd *currencydigest.Handlers, contract string) ([]byte, error) {
+func handleStorageDesignInGroup(hd *cdigest.Handlers, contract string) ([]byte, error) {
 	var de types.Design
 	var st base.State
 
@@ -74,65 +74,65 @@ func handleStorageDesignInGroup(hd *currencydigest.Handlers, contract string) ([
 	return hd.Encoder().Marshal(i)
 }
 
-func buildStorageDesign(hd *currencydigest.Handlers, contract string, de types.Design, st base.State) (currencydigest.Hal, error) {
+func buildStorageDesign(hd *cdigest.Handlers, contract string, de types.Design, st base.State) (cdigest.Hal, error) {
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
 
-	var hal currencydigest.Hal
-	hal = currencydigest.NewBaseHal(de, currencydigest.NewHalLink(h, nil))
+	var hal cdigest.Hal
+	hal = cdigest.NewBaseHal(de, cdigest.NewHalLink(h, nil))
 
-	h, err = hd.CombineURL(currencydigest.HandlerPathBlockByHeight, "height", st.Height().String())
+	h, err = hd.CombineURL(cdigest.HandlerPathBlockByHeight, "height", st.Height().String())
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("block", currencydigest.NewHalLink(h, nil))
+	hal = hal.AddLink("block", cdigest.NewHalLink(h, nil))
 
 	for i := range st.Operations() {
-		h, err := hd.CombineURL(currencydigest.HandlerPathOperation, "hash", st.Operations()[i].String())
+		h, err := hd.CombineURL(cdigest.HandlerPathOperation, "hash", st.Operations()[i].String())
 		if err != nil {
 			return nil, err
 		}
-		hal = hal.AddLink("operations", currencydigest.NewHalLink(h, nil))
+		hal = hal.AddLink("operations", cdigest.NewHalLink(h, nil))
 	}
 
 	return hal, nil
 }
 
-func HandleStorageData(hd *currencydigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageData(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cacheKey := currencydigest.CacheKeyPath(r)
-	if err := currencydigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
+	cacheKey := cdigest.CacheKeyPath(r)
+	if err := cdigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
 		return
 	}
 
-	contract, err, status := currencydigest.ParseRequest(w, r, "contract")
+	contract, err, status := cdigest.ParseRequest(w, r, "contract")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
-	key, err, status := currencydigest.ParseRequest(w, r, "data_key")
+	key, err, status := cdigest.ParseRequest(w, r, "data_key")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
 	if v, err, shared := hd.RG().Do(cacheKey, func() (interface{}, error) {
 		return handleStorageDataInGroup(hd, contract, key)
 	}); err != nil {
-		currencydigest.HTTP2HandleError(w, err)
+		cdigest.HTTP2HandleError(w, err)
 	} else {
-		currencydigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+		cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 		if !shared {
-			currencydigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
+			cdigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
 		}
 	}
 }
 
-func handleStorageDataInGroup(hd *currencydigest.Handlers, contract, key string) ([]byte, error) {
+func handleStorageDataInGroup(hd *cdigest.Handlers, contract, key string) ([]byte, error) {
 	data, height, operation, timestamp, deleted, err := StorageData(hd.Database(), contract, key)
 	if err != nil {
 		return nil, err
@@ -146,8 +146,8 @@ func handleStorageDataInGroup(hd *currencydigest.Handlers, contract, key string)
 }
 
 func buildStorageDataHal(
-	hd *currencydigest.Handlers,
-	contract string, data types.Data, height int64, operation, timestamp string, deleted bool) (currencydigest.Hal, error) {
+	hd *cdigest.Handlers,
+	contract string, data types.Data, height int64, operation, timestamp string, deleted bool) (cdigest.Hal, error) {
 	h, err := hd.CombineURL(
 		HandlerPathStorageData,
 		"contract", contract, "data_key", data.DataKey())
@@ -155,52 +155,52 @@ func buildStorageDataHal(
 		return nil, err
 	}
 
-	var hal currencydigest.Hal
-	hal = currencydigest.NewBaseHal(
+	var hal cdigest.Hal
+	hal = cdigest.NewBaseHal(
 		struct {
 			Data      types.Data `json:"data"`
 			Height    int64      `json:"height"`
 			Operation string     `json:"operation"`
 			Timestamp string     `json:"timestamp"`
 		}{Data: data, Height: height, Operation: operation, Timestamp: timestamp},
-		currencydigest.NewHalLink(h, nil),
+		cdigest.NewHalLink(h, nil),
 	)
 
-	h, err = hd.CombineURL(currencydigest.HandlerPathBlockByHeight, "height", strconv.FormatInt(height, 10))
+	h, err = hd.CombineURL(cdigest.HandlerPathBlockByHeight, "height", strconv.FormatInt(height, 10))
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("block", currencydigest.NewHalLink(h, nil))
+	hal = hal.AddLink("block", cdigest.NewHalLink(h, nil))
 
-	h, err = hd.CombineURL(currencydigest.HandlerPathOperation, "hash", operation)
+	h, err = hd.CombineURL(cdigest.HandlerPathOperation, "hash", operation)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("operation", currencydigest.NewHalLink(h, nil))
+	hal = hal.AddLink("operation", cdigest.NewHalLink(h, nil))
 
 	return hal, nil
 }
 
-func HandleStorageDataHistory(hd *currencydigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDataHistory(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	limit := currencydigest.ParseLimitQuery(r.URL.Query().Get("limit"))
-	offset := currencydigest.ParseStringQuery(r.URL.Query().Get("offset"))
-	reverse := currencydigest.ParseBoolQuery(r.URL.Query().Get("reverse"))
+	limit := cdigest.ParseLimitQuery(r.URL.Query().Get("limit"))
+	offset := cdigest.ParseStringQuery(r.URL.Query().Get("offset"))
+	reverse := cdigest.ParseBoolQuery(r.URL.Query().Get("reverse"))
 
-	cacheKey := currencydigest.CacheKey(
-		r.URL.Path, currencydigest.StringOffsetQuery(offset),
-		currencydigest.StringBoolQuery("reverse", reverse),
+	cacheKey := cdigest.CacheKey(
+		r.URL.Path, cdigest.StringOffsetQuery(offset),
+		cdigest.StringBoolQuery("reverse", reverse),
 	)
 
-	contract, err, status := currencydigest.ParseRequest(w, r, "contract")
+	contract, err, status := cdigest.ParseRequest(w, r, "contract")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
-	key, err, status := currencydigest.ParseRequest(w, r, "data_key")
+	key, err, status := cdigest.ParseRequest(w, r, "data_key")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
@@ -212,7 +212,7 @@ func HandleStorageDataHistory(hd *currencydigest.Handlers, w http.ResponseWriter
 
 	if err != nil {
 		hd.Log().Err(err).Str("contract", contract).Msg("failed to get data history")
-		currencydigest.HTTP2HandleError(w, err)
+		cdigest.HTTP2HandleError(w, err)
 
 		return
 	}
@@ -225,7 +225,7 @@ func HandleStorageDataHistory(hd *currencydigest.Handlers, w http.ResponseWriter
 		filled = l[1].(bool)
 	}
 
-	currencydigest.HTTP2WriteHalBytes(hd.Encoder(), w, b, http.StatusOK)
+	cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, b, http.StatusOK)
 
 	if !shared {
 		expire := hd.ExpireNotFilled()
@@ -233,12 +233,12 @@ func HandleStorageDataHistory(hd *currencydigest.Handlers, w http.ResponseWriter
 			expire = time.Minute
 		}
 
-		currencydigest.HTTP2WriteCache(w, cacheKey, expire)
+		cdigest.HTTP2WriteCache(w, cacheKey, expire)
 	}
 }
 
 func handleStorageDataHistoryInGroup(
-	hd *currencydigest.Handlers,
+	hd *cdigest.Handlers,
 	contract, key string,
 	offset string,
 	reverse bool,
@@ -251,7 +251,7 @@ func handleStorageDataHistoryInGroup(
 		limit = l
 	}
 
-	var vas []currencydigest.Hal
+	var vas []cdigest.Hal
 	if err := SotrageDataHistoryByDataKey(
 		hd.Database(), contract, key, reverse, offset, limit,
 		func(data *types.Data, height int64, operation, timestamp string, deleted bool) (bool, error) {
@@ -279,12 +279,12 @@ func handleStorageDataHistoryInGroup(
 }
 
 func buildStorageDataHistoryHal(
-	hd *currencydigest.Handlers,
+	hd *cdigest.Handlers,
 	contract, key string,
-	vas []currencydigest.Hal,
+	vas []cdigest.Hal,
 	offset string,
 	reverse bool,
-) (currencydigest.Hal, error) {
+) (cdigest.Hal, error) {
 	baseSelf, err := hd.CombineURL(
 		HandlerPathStorageDataHistory,
 		"contract", contract,
@@ -296,20 +296,20 @@ func buildStorageDataHistoryHal(
 
 	self := baseSelf
 	if len(offset) > 0 {
-		self = currencydigest.AddQueryValue(baseSelf, currencydigest.StringOffsetQuery(offset))
+		self = cdigest.AddQueryValue(baseSelf, cdigest.StringOffsetQuery(offset))
 	}
 	if reverse {
-		self = currencydigest.AddQueryValue(baseSelf, currencydigest.StringBoolQuery("reverse", reverse))
+		self = cdigest.AddQueryValue(baseSelf, cdigest.StringBoolQuery("reverse", reverse))
 	}
 
-	var hal currencydigest.Hal
-	hal = currencydigest.NewBaseHal(vas, currencydigest.NewHalLink(self, nil))
+	var hal cdigest.Hal
+	hal = cdigest.NewBaseHal(vas, cdigest.NewHalLink(self, nil))
 
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("service", currencydigest.NewHalLink(h, nil))
+	hal = hal.AddLink("service", cdigest.NewHalLink(h, nil))
 
 	var nextOffset string
 
@@ -328,34 +328,34 @@ func buildStorageDataHistoryHal(
 
 	if len(nextOffset) > 0 {
 		next := baseSelf
-		next = currencydigest.AddQueryValue(next, currencydigest.StringOffsetQuery(nextOffset))
+		next = cdigest.AddQueryValue(next, cdigest.StringOffsetQuery(nextOffset))
 
 		if reverse {
-			next = currencydigest.AddQueryValue(next, currencydigest.StringBoolQuery("reverse", reverse))
+			next = cdigest.AddQueryValue(next, cdigest.StringBoolQuery("reverse", reverse))
 		}
 
-		hal = hal.AddLink("next", currencydigest.NewHalLink(next, nil))
+		hal = hal.AddLink("next", cdigest.NewHalLink(next, nil))
 	}
 
-	hal = hal.AddLink("reverse", currencydigest.NewHalLink(currencydigest.AddQueryValue(baseSelf, currencydigest.StringBoolQuery("reverse", !reverse)), nil))
+	hal = hal.AddLink("reverse", cdigest.NewHalLink(cdigest.AddQueryValue(baseSelf, cdigest.StringBoolQuery("reverse", !reverse)), nil))
 
 	return hal, nil
 }
 
-func HandleStorageDataCount(hd *currencydigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDataCount(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cachekey := currencydigest.CacheKey(
+	cachekey := cdigest.CacheKey(
 		r.URL.Path,
 	)
 
-	contract, err, status := currencydigest.ParseRequest(w, r, "contract")
+	contract, err, status := cdigest.ParseRequest(w, r, "contract")
 	if err != nil {
-		currencydigest.HTTP2ProblemWithError(w, err, status)
+		cdigest.HTTP2ProblemWithError(w, err, status)
 
 		return
 	}
 
-	deleted := currencydigest.ParseBoolQuery(r.URL.Query().Get("deleted"))
+	deleted := cdigest.ParseBoolQuery(r.URL.Query().Get("deleted"))
 
 	v, err, shared := hd.RG().Do(cachekey, func() (interface{}, error) {
 		i, err := handleStorageDataCountInGroup(hd, contract, deleted)
@@ -365,21 +365,21 @@ func HandleStorageDataCount(hd *currencydigest.Handlers, w http.ResponseWriter, 
 
 	if err != nil {
 		hd.Log().Err(err).Str("contract", contract).Msg("failed to count data")
-		currencydigest.HTTP2HandleError(w, err)
+		cdigest.HTTP2HandleError(w, err)
 
 		return
 	}
 
-	currencydigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+	cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 	if !shared {
 		expire := hd.ExpireNotFilled()
-		currencydigest.HTTP2WriteCache(w, cachekey, expire)
+		cdigest.HTTP2WriteCache(w, cachekey, expire)
 	}
 }
 
 func handleStorageDataCountInGroup(
-	hd *currencydigest.Handlers,
+	hd *cdigest.Handlers,
 	contract string, deleted bool,
 ) ([]byte, error) {
 	count, err := DataCountByContract(
@@ -399,10 +399,10 @@ func handleStorageDataCountInGroup(
 }
 
 func buildStorageDataCountHal(
-	hd *currencydigest.Handlers,
+	hd *cdigest.Handlers,
 	contract string,
 	count int64,
-) (currencydigest.Hal, error) {
+) (cdigest.Hal, error) {
 	baseSelf, err := hd.CombineURL(HandlerPathStorageDataCount, "contract", contract)
 	if err != nil {
 		return nil, err
@@ -418,14 +418,14 @@ func buildStorageDataCountHal(
 	m.Contract = contract
 	m.DataCount = count
 
-	var hal currencydigest.Hal
-	hal = currencydigest.NewBaseHal(m, currencydigest.NewHalLink(self, nil))
+	var hal cdigest.Hal
+	hal = cdigest.NewBaseHal(m, cdigest.NewHalLink(self, nil))
 
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("collection", currencydigest.NewHalLink(h, nil))
+	hal = hal.AddLink("collection", cdigest.NewHalLink(h, nil))
 
 	return hal, nil
 }

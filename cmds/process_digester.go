@@ -3,7 +3,7 @@ package cmds
 import (
 	"context"
 
-	currencydigest "github.com/ProtoconNet/mitum-currency/v3/digest"
+	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
 	"github.com/ProtoconNet/mitum-storage/digest"
 	"github.com/ProtoconNet/mitum2/isaac"
 	"github.com/ProtoconNet/mitum2/launch"
@@ -14,12 +14,12 @@ import (
 func ProcessDigester(ctx context.Context) (context.Context, error) {
 	var vs util.Version
 	var log *logging.Logging
-	var digestDesign currencydigest.YamlDigestDesign
+	var digestDesign cdigest.YamlDigestDesign
 
 	if err := util.LoadFromContextOK(ctx,
 		launch.VersionContextKey, &vs,
 		launch.LoggingContextKey, &log,
-		currencydigest.ContextValueDigestDesign, &digestDesign,
+		cdigest.ContextValueDigestDesign, &digestDesign,
 	); err != nil {
 		return ctx, err
 	}
@@ -28,13 +28,17 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 		return ctx, nil
 	}
 
-	var st *currencydigest.Database
-	if err := util.LoadFromContext(ctx, currencydigest.ContextValueDigestDatabase, &st); err != nil {
+	var st *cdigest.Database
+	if err := util.LoadFromContext(ctx, cdigest.ContextValueDigestDatabase, &st); err != nil {
 		return ctx, err
 	}
 
 	if st == nil {
 		return ctx, nil
+	}
+
+	if err := st.CreateIndex(digest.DefaultIndexes); err != nil {
+		return ctx, err
 	}
 
 	var design launch.NodeDesign
@@ -64,13 +68,13 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 		sourceReaders = i
 	}
 
-	di := currencydigest.NewDigester(st, root, sourceReaders, fromRemotes, design.NetworkID, vs.String(), nil)
+	di := cdigest.NewDigester(st, root, sourceReaders, fromRemotes, design.NetworkID, vs.String(), nil)
 	_ = di.SetLogging(log)
 
-	di.PrepareFunc = []currencydigest.BlockSessionPrepareFunc{
-		currencydigest.PrepareCurrencies, currencydigest.PrepareAccounts, currencydigest.PrepareDIDRegistry,
+	di.PrepareFunc = []cdigest.BlockSessionPrepareFunc{
+		cdigest.PrepareCurrencies, cdigest.PrepareAccounts, cdigest.PrepareDIDRegistry,
 		digest.PrepareStorage,
 	}
 
-	return context.WithValue(ctx, currencydigest.ContextValueDigester, di), nil
+	return context.WithValue(ctx, cdigest.ContextValueDigester, di), nil
 }

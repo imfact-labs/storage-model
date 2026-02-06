@@ -2,7 +2,7 @@ package storage
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
-	crcytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum-storage/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
@@ -17,13 +17,13 @@ type CreateDatasItem struct {
 	contract  base.Address
 	dataKey   string
 	dataValue string
-	currency  crcytypes.CurrencyID
+	currency  ctypes.CurrencyID
 }
 
 func NewCreateDatasItem(
 	contract base.Address,
 	key, value string,
-	currency crcytypes.CurrencyID,
+	currency ctypes.CurrencyID,
 ) CreateDatasItem {
 	return CreateDatasItem{
 		BaseHinter: hint.NewBaseHinter(CreateDatasItemHint),
@@ -50,7 +50,7 @@ func (it CreateDatasItem) IsValid([]byte) error {
 				errors.Errorf("invalid data key length %v < 1 or %v > %v", len(it.dataKey), len(it.dataKey), types.MaxKeyLen)))
 	}
 
-	if !crcytypes.ReValidSpcecialCh.Match([]byte(it.dataKey)) {
+	if !ctypes.ReValidSpcecialCh.Match([]byte(it.dataKey)) {
 		return common.ErrFactInvalid.Wrap(common.ErrValueInvalid.Wrap(errors.Errorf("date key %s, must match regex `^[^\\s:/?#\\[\\]$@]*$`", it.dataKey)))
 	}
 
@@ -82,7 +82,7 @@ func (it CreateDatasItem) DataValue() string {
 	return it.dataValue
 }
 
-func (it CreateDatasItem) Currency() crcytypes.CurrencyID {
+func (it CreateDatasItem) Currency() ctypes.CurrencyID {
 	return it.currency
 }
 

@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/ProtoconNet/mitum-currency/v3/common"
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
 	"github.com/pkg/errors"
@@ -40,7 +40,7 @@ func (d Data) IsValid([]byte) error {
 		return errors.Errorf("invalid key length %v < 1 or %v > %v", len(d.dataKey), len(d.dataKey), MaxKeyLen)
 	}
 
-	if !currencytypes.ReValidSpcecialCh.Match([]byte(d.dataKey)) {
+	if !ctypes.ReValidSpcecialCh.Match([]byte(d.dataKey)) {
 		return common.ErrFactInvalid.Wrap(common.ErrValueInvalid.Wrap(errors.Errorf("date key %s, must match regex `^[^\\s:/?#\\[\\]$@]*$`", d.dataKey)))
 	}
 

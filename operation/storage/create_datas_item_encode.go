@@ -1,7 +1,7 @@
 package storage
 
 import (
-	currencytypes "github.com/ProtoconNet/mitum-currency/v3/types"
+	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util/encoder"
 	"github.com/ProtoconNet/mitum2/util/hint"
@@ -21,7 +21,7 @@ func (it *CreateDatasItem) unpack(enc encoder.Encoder, ht hint.Hint,
 
 	it.dataKey = dataKey
 	it.dataValue = dataValue
-	it.currency = currencytypes.CurrencyID(cid)
+	it.currency = ctypes.CurrencyID(cid)
 
 	return nil
 }

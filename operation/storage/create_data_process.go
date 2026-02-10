@@ -6,14 +6,20 @@ import (
 
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/state"
+	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
 	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
 	statestrg "github.com/ProtoconNet/mitum-storage/state"
 	"github.com/ProtoconNet/mitum-storage/types"
-
-	statec "github.com/ProtoconNet/mitum-currency/v3/state/currency"
-	mitumbase "github.com/ProtoconNet/mitum2/base"
+	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
+	"github.com/pkg/errors"
 )
+
+var createDataItemProcessorPool = sync.Pool{
+	New: func() interface{} {
+		return new(CreateDataItemProcessor)
+	},
+}
 
 var createDataProcessorPool = sync.Pool{
 	New: func() interface{} {
@@ -22,31 +28,96 @@ var createDataProcessorPool = sync.Pool{
 }
 
 func (CreateData) Process(
-	_ context.Context, _ mitumbase.GetStateFunc,
-) ([]mitumbase.StateMergeValue, mitumbase.OperationProcessReasonError, error) {
+	_ context.Context, _ base.GetStateFunc,
+) ([]base.StateMergeValue, base.OperationProcessReasonError, error) {
 	return nil, nil, nil
 }
 
+type CreateDataItemProcessor struct {
+	h      util.Hash
+	sender base.Address
+	item   CreateDataItem
+}
+
+func (ipp *CreateDataItemProcessor) PreProcess(
+	_ context.Context, _ base.Operation, getStateFunc base.GetStateFunc,
+) error {
+	e := util.StringError("preprocess CreateDataItemProcessor")
+	it := ipp.item
+
+	if err := it.IsValid(nil); err != nil {
+		return e.Wrap(err)
+	}
+
+	if err := state.CheckExistsState(statec.DesignStateKey(it.Currency()), getStateFunc); err != nil {
+		return e.Wrap(common.ErrCurrencyNF.Wrap(errors.Errorf("currency id %v", it.Currency())))
+	}
+
+	if err := state.CheckExistsState(statestrg.DesignStateKey(it.Contract()), getStateFunc); err != nil {
+		return e.Wrap(
+			common.ErrServiceNF.Errorf("storage service state for contract account %v", it.Contract()))
+	}
+
+	if found, _ := state.CheckNotExistsState(statestrg.DataStateKey(it.Contract(), it.DataKey()), getStateFunc); found {
+		return e.Wrap(
+			common.ErrStateE.Errorf(
+				"storage data for key %q in contract account %v",
+				it.DataKey(), it.Contract(),
+			))
+	}
+
+	return nil
+}
+
+func (ipp *CreateDataItemProcessor) Process(
+	_ context.Context, _ base.Operation, _ base.GetStateFunc,
+) ([]base.StateMergeValue, error) {
+	it := ipp.item
+
+	var sts []base.StateMergeValue
+	data := types.NewData(
+		it.DataKey(), it.DataValue(),
+	)
+	if err := data.IsValid(nil); err != nil {
+		return nil, err
+	}
+
+	sts = append(sts, state.NewStateMergeValue(
+		statestrg.DataStateKey(it.Contract(), it.DataKey()),
+		statestrg.NewDataStateValue(data),
+	))
+
+	return sts, nil
+}
+
+func (ipp *CreateDataItemProcessor) Close() {
+	ipp.h = nil
+	ipp.sender = nil
+	ipp.item = CreateDataItem{}
+
+	createDataItemProcessorPool.Put(ipp)
+}
+
 type CreateDataProcessor struct {
-	*mitumbase.BaseOperationProcessor
+	*base.BaseOperationProcessor
 }
 
 func NewCreateDataProcessor() ctypes.GetNewProcessor {
 	return func(
-		height mitumbase.Height,
-		getStateFunc mitumbase.GetStateFunc,
-		newPreProcessConstraintFunc mitumbase.NewOperationProcessorProcessFunc,
-		newProcessConstraintFunc mitumbase.NewOperationProcessorProcessFunc,
-	) (mitumbase.OperationProcessor, error) {
+		height base.Height,
+		getStateFunc base.GetStateFunc,
+		newPreProcessConstraintFunc base.NewOperationProcessorProcessFunc,
+		newProcessConstraintFunc base.NewOperationProcessorProcessFunc,
+	) (base.OperationProcessor, error) {
 		e := util.StringError("failed to create new CreateDataProcessor")
 
 		nopp := createDataProcessorPool.Get()
 		opp, ok := nopp.(*CreateDataProcessor)
 		if !ok {
-			return nil, e.Errorf("expected CreateDataProcessor, not %T", nopp)
+			return nil, e.Errorf("expected %T, not %T", CreateDataProcessor{}, nopp)
 		}
 
-		b, err := mitumbase.NewBaseOperationProcessor(
+		b, err := base.NewBaseOperationProcessor(
 			height, getStateFunc, newPreProcessConstraintFunc, newProcessConstraintFunc)
 		if err != nil {
 			return nil, e.Wrap(err)
@@ -59,65 +130,75 @@ func NewCreateDataProcessor() ctypes.GetNewProcessor {
 }
 
 func (opp *CreateDataProcessor) PreProcess(
-	ctx context.Context, op mitumbase.Operation, getStateFunc mitumbase.GetStateFunc,
-) (context.Context, mitumbase.OperationProcessReasonError, error) {
+	ctx context.Context, op base.Operation, getStateFunc base.GetStateFunc,
+) (context.Context, base.OperationProcessReasonError, error) {
 	fact, ok := op.Fact().(CreateDataFact)
 	if !ok {
-		return ctx, mitumbase.NewBaseOperationProcessReasonError(
+		return ctx, base.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Wrap(common.ErrMTypeMismatch).
 				Errorf("expected %T, not %T", CreateDataFact{}, op.Fact())), nil
 	}
 
 	if err := fact.IsValid(nil); err != nil {
-		return ctx, mitumbase.NewBaseOperationProcessReasonError(
+		return ctx, base.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Errorf("%v", err)), nil
 	}
 
-	if err := state.CheckExistsState(statec.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
-		return ctx, mitumbase.NewBaseOperationProcessReasonError(
-			common.ErrMPreProcess.Wrap(common.ErrMCurrencyNF).Errorf("currency id %v", fact.Currency())), nil
-	}
+	for _, it := range fact.Items() {
+		ip := createDataItemProcessorPool.Get()
+		ipc, ok := ip.(*CreateDataItemProcessor)
+		if !ok {
+			return nil, base.NewBaseOperationProcessReasonError(
+				common.ErrMTypeMismatch.Errorf("expected %T, not %T", CreateDataItemProcessor{}, ip)), nil
+		}
 
-	if err := state.CheckExistsState(statestrg.DesignStateKey(fact.Contract()), getStateFunc); err != nil {
-		return nil, mitumbase.NewBaseOperationProcessReasonError(
-			common.ErrMPreProcess.
-				Wrap(common.ErrMServiceNF).Errorf("storage service state for contract account %v",
-				fact.Contract(),
-			)), nil
-	}
+		ipc.h = op.Hash()
+		ipc.sender = fact.Sender()
+		ipc.item = it
 
-	if found, _ := state.CheckNotExistsState(statestrg.DataStateKey(fact.Contract(), fact.DataKey()), getStateFunc); found {
-		return nil, mitumbase.NewBaseOperationProcessReasonError(
-			common.ErrMPreProcess.
-				Wrap(common.ErrMStateE).Errorf("storage data for key %q in contract account %v",
-				fact.DataKey(), fact.Contract(),
-			)), nil
+		if err := ipc.PreProcess(ctx, op, getStateFunc); err != nil {
+			return nil, base.NewBaseOperationProcessReasonError(
+				common.ErrMPreProcess.Errorf("%v", err),
+			), nil
+		}
+
+		ipc.Close()
 	}
 
 	return ctx, nil, nil
 }
 
 func (opp *CreateDataProcessor) Process( // nolint:dupl
-	_ context.Context, op mitumbase.Operation, getStateFunc mitumbase.GetStateFunc) (
-	[]mitumbase.StateMergeValue, mitumbase.OperationProcessReasonError, error,
+	ctx context.Context, op base.Operation, getStateFunc base.GetStateFunc) (
+	[]base.StateMergeValue, base.OperationProcessReasonError, error,
 ) {
 	fact, _ := op.Fact().(CreateDataFact)
 
-	stData := types.NewData(
-		fact.DataKey(),
-		fact.DataValue(),
-	)
-	if err := stData.IsValid(nil); err != nil {
-		return nil, mitumbase.NewBaseOperationProcessReasonError("invalid storage data; %w", err), nil
+	var sts []base.StateMergeValue // nolint:prealloc
+	for _, it := range fact.Items() {
+		ip := createDataItemProcessorPool.Get()
+		ipc, _ := ip.(*CreateDataItemProcessor)
+
+		ipc.h = op.Hash()
+		ipc.sender = fact.Sender()
+		ipc.item = it
+
+		st, err := ipc.Process(ctx, op, getStateFunc)
+		if err != nil {
+			return nil, base.NewBaseOperationProcessReasonError("failed to process CreateDataItem; %w", err), nil
+		}
+
+		sts = append(sts, st...)
+
+		ipc.Close()
 	}
 
-	var sts []mitumbase.StateMergeValue // nolint:prealloc
-	sts = append(sts, state.NewStateMergeValue(
-		statestrg.DataStateKey(fact.Contract(), fact.DataKey()),
-		statestrg.NewDataStateValue(stData),
-	))
+	items := make([]DataItem, len(fact.Items()))
+	for i := range fact.Items() {
+		items[i] = fact.Items()[i]
+	}
 
 	return sts, nil, nil
 }

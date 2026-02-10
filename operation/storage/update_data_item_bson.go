@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func (it UpdateDatasItem) MarshalBSON() ([]byte, error) {
+func (it UpdateDataItem) MarshalBSON() ([]byte, error) {
 	return bsonenc.Marshal(
 		bson.M{
 			"_hint":      it.Hint().String(),
@@ -19,7 +19,7 @@ func (it UpdateDatasItem) MarshalBSON() ([]byte, error) {
 	)
 }
 
-type UpdateDatasItemBSONUnmarshaler struct {
+type UpdateDataItemBSONUnmarshaler struct {
 	Hint      string `bson:"_hint"`
 	Contract  string `bson:"contract"`
 	DataKey   string `bson:"data_key"`
@@ -27,8 +27,8 @@ type UpdateDatasItemBSONUnmarshaler struct {
 	Currency  string `bson:"currency"`
 }
 
-func (it *UpdateDatasItem) DecodeBSON(b []byte, enc *bsonenc.Encoder) error {
-	var uit UpdateDatasItemBSONUnmarshaler
+func (it *UpdateDataItem) DecodeBSON(b []byte, enc *bsonenc.Encoder) error {
+	var uit UpdateDataItemBSONUnmarshaler
 	if err := bson.Unmarshal(b, &uit); err != nil {
 		return common.DecorateError(err, common.ErrDecodeBson, *it)
 	}

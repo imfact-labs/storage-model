@@ -47,6 +47,11 @@ func POperationProcessorsMap(pctx context.Context) (context.Context, error) {
 	); err != nil {
 		return pctx, err
 	} else if err := opr.SetProcessor(
+		storage.DeleteDataHint,
+		storage.NewDeleteDataProcessor(),
+	); err != nil {
+		return pctx, err
+	} else if err := opr.SetProcessor(
 		storage.CreateDataHint,
 		storage.NewCreateDataProcessor(),
 	); err != nil {
@@ -56,33 +61,9 @@ func POperationProcessorsMap(pctx context.Context) (context.Context, error) {
 		storage.NewUpdateDataProcessor(),
 	); err != nil {
 		return pctx, err
-	} else if err := opr.SetProcessor(
-		storage.DeleteDataHint,
-		storage.NewDeleteDataProcessor(),
-	); err != nil {
-		return pctx, err
-	} else if err := opr.SetProcessor(
-		storage.CreateDatasHint,
-		storage.NewCreateDatasProcessor(),
-	); err != nil {
-		return pctx, err
-	} else if err := opr.SetProcessor(
-		storage.UpdateDatasHint,
-		storage.NewUpdateDatasProcessor(),
-	); err != nil {
-		return pctx, err
 	}
 
 	_ = set.Add(storage.CreateDataHint, func(height base.Height, getStatef base.GetStateFunc) (base.OperationProcessor, error) {
-		return opr.New(
-			height,
-			getStatef,
-			nil,
-			nil,
-		)
-	})
-
-	_ = set.Add(storage.CreateDatasHint, func(height base.Height, getStatef base.GetStateFunc) (base.OperationProcessor, error) {
 		return opr.New(
 			height,
 			getStatef,
@@ -101,15 +82,6 @@ func POperationProcessorsMap(pctx context.Context) (context.Context, error) {
 	})
 
 	_ = set.Add(storage.UpdateDataHint, func(height base.Height, getStatef base.GetStateFunc) (base.OperationProcessor, error) {
-		return opr.New(
-			height,
-			getStatef,
-			nil,
-			nil,
-		)
-	})
-
-	_ = set.Add(storage.UpdateDatasHint, func(height base.Height, getStatef base.GetStateFunc) (base.OperationProcessor, error) {
 		return opr.New(
 			height,
 			getStatef,

@@ -91,22 +91,6 @@ func CheckDuplication(opr *cprocessor.OperationProcessor, op mitumbase.Operation
 		}
 		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		duplicationTypeContractID = cprocessor.DuplicationKey(fact.Contract().String(), DuplicationTypeContract)
-	case storage.CreateData:
-		fact, ok := t.Fact().(storage.CreateDataFact)
-		if !ok {
-			return errors.Errorf("expected CreateDataFact, not %T", t.Fact())
-		}
-		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
-			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
-	case storage.UpdateData:
-		fact, ok := t.Fact().(storage.UpdateDataFact)
-		if !ok {
-			return errors.Errorf("expected UpdateDataFact, not %T", t.Fact())
-		}
-		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
-		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
-			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
 	case storage.DeleteData:
 		fact, ok := t.Fact().(storage.DeleteDataFact)
 		if !ok {
@@ -115,10 +99,10 @@ func CheckDuplication(opr *cprocessor.OperationProcessor, op mitumbase.Operation
 		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		duplicationTypeStorageData = []string{cprocessor.DuplicationKey(
 			fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey()), DuplicationTypeStorageData)}
-	case storage.CreateDatas:
-		fact, ok := t.Fact().(storage.CreateDatasFact)
+	case storage.CreateData:
+		fact, ok := t.Fact().(storage.CreateDataFact)
 		if !ok {
-			return errors.Errorf("expected CreateDatasFact, not %T", t.Fact())
+			return errors.Errorf("expected CreateDataFact, not %T", t.Fact())
 		}
 		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		var datas []string
@@ -127,10 +111,10 @@ func CheckDuplication(opr *cprocessor.OperationProcessor, op mitumbase.Operation
 			datas = append(datas, key)
 		}
 		duplicationTypeStorageData = datas
-	case storage.UpdateDatas:
-		fact, ok := t.Fact().(storage.UpdateDatasFact)
+	case storage.UpdateData:
+		fact, ok := t.Fact().(storage.UpdateDataFact)
 		if !ok {
-			return errors.Errorf("expected UpdateDatasFact, not %T", t.Fact())
+			return errors.Errorf("expected UpdateDataFact, not %T", t.Fact())
 		}
 		duplicationTypeSenderID = cprocessor.DuplicationKey(fact.Sender().String(), DuplicationTypeSender)
 		var datas []string
@@ -211,8 +195,6 @@ func GetNewProcessor(opr *cprocessor.OperationProcessor, op mitumbase.Operation)
 		currency.Mint,
 		storage.RegisterModel,
 		storage.UpdateData,
-		storage.UpdateDatas,
-		storage.CreateDatas,
 		storage.DeleteData,
 		storage.CreateData:
 		return nil, false, errors.Errorf("%T needs SetProcessor", t)

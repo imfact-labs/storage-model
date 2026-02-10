@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-var UpdateDatasItemHint = hint.MustNewHint("mitum-storage-update-datas-item-v0.0.1")
+var CreateDataItemHint = hint.MustNewHint("mitum-storage-create-data-item-v0.0.1")
 
-type UpdateDatasItem struct {
+type CreateDataItem struct {
 	hint.BaseHinter
 	contract  base.Address
 	dataKey   string
@@ -20,13 +20,13 @@ type UpdateDatasItem struct {
 	currency  ctypes.CurrencyID
 }
 
-func NewUpdateDatasItem(
+func NewCreateDataItem(
 	contract base.Address,
 	key, value string,
 	currency ctypes.CurrencyID,
-) UpdateDatasItem {
-	return UpdateDatasItem{
-		BaseHinter: hint.NewBaseHinter(UpdateDatasItemHint),
+) CreateDataItem {
+	return CreateDataItem{
+		BaseHinter: hint.NewBaseHinter(CreateDataItemHint),
 		contract:   contract,
 		dataKey:    key,
 		dataValue:  value,
@@ -34,7 +34,7 @@ func NewUpdateDatasItem(
 	}
 }
 
-func (it UpdateDatasItem) Bytes() []byte {
+func (it CreateDataItem) Bytes() []byte {
 	return util.ConcatBytesSlice(
 		it.contract.Bytes(),
 		[]byte(it.dataKey),
@@ -43,7 +43,7 @@ func (it UpdateDatasItem) Bytes() []byte {
 	)
 }
 
-func (it UpdateDatasItem) IsValid([]byte) error {
+func (it CreateDataItem) IsValid([]byte) error {
 	if len(it.dataKey) < 1 || len(it.dataKey) > types.MaxKeyLen {
 		return common.ErrFactInvalid.Wrap(
 			common.ErrValOOR.Wrap(
@@ -70,23 +70,23 @@ func (it UpdateDatasItem) IsValid([]byte) error {
 	return nil
 }
 
-func (it UpdateDatasItem) Contract() base.Address {
+func (it CreateDataItem) Contract() base.Address {
 	return it.contract
 }
 
-func (it UpdateDatasItem) DataKey() string {
+func (it CreateDataItem) DataKey() string {
 	return it.dataKey
 }
 
-func (it UpdateDatasItem) DataValue() string {
+func (it CreateDataItem) DataValue() string {
 	return it.dataValue
 }
 
-func (it UpdateDatasItem) Currency() ctypes.CurrencyID {
+func (it CreateDataItem) Currency() ctypes.CurrencyID {
 	return it.currency
 }
 
-func (it UpdateDatasItem) Addresses() []base.Address {
+func (it CreateDataItem) Addresses() []base.Address {
 	ad := make([]base.Address, 1)
 
 	ad[0] = it.contract

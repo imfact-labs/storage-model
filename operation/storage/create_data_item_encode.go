@@ -7,7 +7,7 @@ import (
 	"github.com/ProtoconNet/mitum2/util/hint"
 )
 
-func (it *CreateDatasItem) unpack(enc encoder.Encoder, ht hint.Hint,
+func (it *CreateDataItem) unpack(enc encoder.Encoder, ht hint.Hint,
 	cAdr, dataKey, dataValue, cid string,
 ) error {
 	it.BaseHinter = hint.NewBaseHinter(ht)

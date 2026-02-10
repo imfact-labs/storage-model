@@ -74,7 +74,9 @@ func (cmd *CreateDataCommand) parseFlags() error {
 func (cmd *CreateDataCommand) createOperation() (base.Operation, error) { // nolint:dupl
 	e := util.StringError("failed to create create-data operation")
 
-	fact := storage.NewCreateDataFact([]byte(cmd.Token), cmd.sender, cmd.contract, cmd.Key, cmd.Value, cmd.Currency.CID)
+	item := storage.NewCreateDataItem(cmd.contract, cmd.Key, cmd.Value, cmd.Currency.CID)
+
+	fact := storage.NewCreateDataFact([]byte(cmd.Token), cmd.sender, []storage.CreateDataItem{item})
 
 	op, err := storage.NewCreateData(fact)
 	if err != nil {

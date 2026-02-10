@@ -1,16 +1,25 @@
 package storage
 
 import (
+	"fmt"
+
 	"github.com/ProtoconNet/mitum-currency/v3/common"
 	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
 	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	"github.com/ProtoconNet/mitum-storage/types"
-	"github.com/ProtoconNet/mitum2/base"
+	mitumbase "github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util"
 	"github.com/ProtoconNet/mitum2/util/hint"
 	"github.com/ProtoconNet/mitum2/util/valuehash"
 	"github.com/pkg/errors"
 )
+
+type DataItem interface {
+	util.Byter
+	util.IsValider
+	Currency() ctypes.CurrencyID
+}
+
+var CreateDataItems uint = 100
 
 var (
 	CreateDataFactHint = hint.MustNewHint("mitum-storage-create-data-operation-fact-v0.0.1")
@@ -18,25 +27,18 @@ var (
 )
 
 type CreateDataFact struct {
-	base.BaseFact
-	sender    base.Address
-	contract  base.Address
-	dataKey   string
-	dataValue string
-	currency  ctypes.CurrencyID
+	mitumbase.BaseFact
+	sender mitumbase.Address
+	items  []CreateDataItem
 }
 
 func NewCreateDataFact(
-	token []byte, sender, contract base.Address,
-	key, value string, currency ctypes.CurrencyID) CreateDataFact {
-	bf := base.NewBaseFact(CreateDataFactHint, token)
+	token []byte, sender mitumbase.Address, items []CreateDataItem) CreateDataFact {
+	bf := mitumbase.NewBaseFact(CreateDataFactHint, token)
 	fact := CreateDataFact{
-		BaseFact:  bf,
-		sender:    sender,
-		contract:  contract,
-		dataKey:   key,
-		dataValue: value,
-		currency:  currency,
+		BaseFact: bf,
+		sender:   sender,
+		items:    items,
 	}
 
 	fact.SetHash(fact.GenerateHash())
@@ -44,34 +46,35 @@ func NewCreateDataFact(
 }
 
 func (fact CreateDataFact) IsValid(b []byte) error {
-	if len(fact.dataKey) < 1 || len(fact.dataKey) > types.MaxKeyLen {
-		return common.ErrFactInvalid.Wrap(
-			common.ErrValOOR.Wrap(
-				errors.Errorf("invalid data key length %v < 1 or %v > %v", len(fact.dataKey), len(fact.dataKey), types.MaxKeyLen)))
-	}
-
-	if !ctypes.ReValidSpcecialCh.Match([]byte(fact.dataKey)) {
-		return common.ErrFactInvalid.Wrap(common.ErrValueInvalid.Wrap(errors.Errorf("date key %s, must match regex `^[^\\s:/?#\\[\\]$@]*$`", fact.dataKey)))
-	}
-
-	if len(fact.dataValue) < 1 || len(fact.dataValue) > types.MaxDataLen {
-		return common.ErrFactInvalid.Wrap(
-			common.ErrValOOR.Wrap(
-				errors.Errorf("invalid data value length %v < 1 or %v > %v", len(fact.dataValue), len(fact.dataValue), types.MaxDataLen)))
-	}
-
-	if fact.sender.Equal(fact.contract) {
-		return common.ErrFactInvalid.Wrap(
-			common.ErrSelfTarget.Wrap(errors.Errorf("sender %v is same with contract account", fact.sender)))
+	if n := len(fact.items); n < 1 {
+		return common.ErrFactInvalid.Wrap(common.ErrArrayLen.Wrap(errors.Errorf("empty items")))
+	} else if n > int(CreateDataItems) {
+		return common.ErrFactInvalid.Wrap(common.ErrArrayLen.Wrap(errors.Errorf("items, %d over max, %d", n, CreateDataItems)))
 	}
 
 	if err := util.CheckIsValiders(nil, false,
-		fact.BaseHinter,
 		fact.sender,
-		fact.contract,
-		fact.currency,
 	); err != nil {
 		return common.ErrFactInvalid.Wrap(err)
+	}
+
+	founds := map[string]struct{}{}
+	for _, it := range fact.items {
+		if err := it.IsValid(nil); err != nil {
+			return common.ErrFactInvalid.Wrap(err)
+		}
+
+		if it.contract.Equal(fact.sender) {
+			return common.ErrFactInvalid.Wrap(common.ErrSelfTarget.Wrap(errors.Errorf("sender %v is same with contract account", fact.sender)))
+		}
+
+		k := fmt.Sprintf("%s-%s", it.contract, it.dataKey)
+
+		if _, found := founds[k]; found {
+			return common.ErrFactInvalid.Wrap(common.ErrDupVal.Wrap(errors.Errorf("dataKey %v for contract account %v", it.DataKey(), it.Contract())))
+		}
+
+		founds[k] = struct{}{}
 	}
 
 	if err := common.IsValidOperationFact(fact, b); err != nil {
@@ -90,71 +93,88 @@ func (fact CreateDataFact) GenerateHash() util.Hash {
 }
 
 func (fact CreateDataFact) Bytes() []byte {
+	is := make([][]byte, len(fact.items))
+	for i := range fact.items {
+		is[i] = fact.items[i].Bytes()
+	}
+
 	return util.ConcatBytesSlice(
 		fact.Token(),
 		fact.sender.Bytes(),
-		fact.contract.Bytes(),
-		[]byte(fact.dataKey),
-		[]byte(fact.dataValue),
-		fact.currency.Bytes(),
+		util.ConcatBytesSlice(is...),
 	)
 }
 
-func (fact CreateDataFact) Token() base.Token {
+func (fact CreateDataFact) Token() mitumbase.Token {
 	return fact.BaseFact.Token()
 }
 
-func (fact CreateDataFact) Sender() base.Address {
+func (fact CreateDataFact) Signer() mitumbase.Address {
 	return fact.sender
 }
 
-func (fact CreateDataFact) Contract() base.Address {
-	return fact.contract
+func (fact CreateDataFact) Items() []CreateDataItem {
+	return fact.items
 }
 
-func (fact CreateDataFact) DataKey() string {
-	return fact.dataKey
-}
+func (fact CreateDataFact) Addresses() ([]mitumbase.Address, error) {
+	var as []mitumbase.Address
 
-func (fact CreateDataFact) DataValue() string {
-	return fact.dataValue
-}
-
-func (fact CreateDataFact) Currency() ctypes.CurrencyID {
-	return fact.currency
-}
-
-func (fact CreateDataFact) Addresses() ([]base.Address, error) {
-	as := []base.Address{fact.sender}
+	adrMap := make(map[string]struct{})
+	for i := range fact.items {
+		for j := range fact.items[i].Addresses() {
+			if _, found := adrMap[fact.items[i].Addresses()[j].String()]; !found {
+				adrMap[fact.items[i].Addresses()[j].String()] = struct{}{}
+				as = append(as, fact.items[i].Addresses()[j])
+			}
+		}
+	}
+	as = append(as, fact.sender)
 
 	return as, nil
 }
 
 func (fact CreateDataFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
 	required := make(map[ctypes.CurrencyID][]common.Big)
-	required[fact.Currency()] = []common.Big{common.ZeroBig}
+
+	for i := range fact.items {
+		zeroBig := common.ZeroBig
+		cid := fact.items[i].Currency()
+		var amsTemp []common.Big
+		if ams, found := required[cid]; found {
+			ams = append(ams, zeroBig)
+			required[cid] = ams
+		} else {
+			amsTemp = append(amsTemp, zeroBig)
+			required[cid] = amsTemp
+		}
+	}
 
 	return required
 }
 
-func (fact CreateDataFact) FeePayer() base.Address {
+func (fact CreateDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
 }
 
 func (fact CreateDataFact) FeeItemCount() (uint, bool) {
-	return extras.ZeroItem, extras.HasNoItem
+	return uint(len(fact.items)), extras.HasItem
 }
 
-func (fact CreateDataFact) FactUser() base.Address {
+func (fact CreateDataFact) FactUser() mitumbase.Address {
 	return fact.sender
 }
 
-func (fact CreateDataFact) Signer() base.Address {
+func (fact CreateDataFact) Sender() mitumbase.Address {
 	return fact.sender
 }
 
-func (fact CreateDataFact) ActiveContractOwnerHandlerOnly() [][2]base.Address {
-	return [][2]base.Address{{fact.contract, fact.sender}}
+func (fact CreateDataFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Address {
+	var arr [][2]mitumbase.Address
+	for i := range fact.items {
+		arr = append(arr, [2]mitumbase.Address{fact.items[i].contract, fact.sender})
+	}
+	return arr
 }
 
 type CreateData struct {

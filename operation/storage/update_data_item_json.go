@@ -9,7 +9,7 @@ import (
 	"github.com/ProtoconNet/mitum2/util/hint"
 )
 
-type CreateDatasItemJSONMarshaler struct {
+type UpdateDataItemJSONMarshaler struct {
 	hint.BaseHinter
 	Contract  base.Address      `json:"contract"`
 	DataKey   string            `json:"dataKey"`
@@ -17,8 +17,8 @@ type CreateDatasItemJSONMarshaler struct {
 	Currency  ctypes.CurrencyID `json:"currency"`
 }
 
-func (it CreateDatasItem) MarshalJSON() ([]byte, error) {
-	return util.MarshalJSON(CreateDatasItemJSONMarshaler{
+func (it UpdateDataItem) MarshalJSON() ([]byte, error) {
+	return util.MarshalJSON(UpdateDataItemJSONMarshaler{
 		BaseHinter: it.BaseHinter,
 		Contract:   it.contract,
 		DataKey:    it.dataKey,
@@ -27,7 +27,7 @@ func (it CreateDatasItem) MarshalJSON() ([]byte, error) {
 	})
 }
 
-type CreateDatasItemJSONUnMarshaler struct {
+type UpdateDataItemJSONUnMarshaler struct {
 	Hint      hint.Hint `json:"_hint"`
 	Contract  string    `json:"contract"`
 	DataKey   string    `json:"dataKey"`
@@ -35,8 +35,8 @@ type CreateDatasItemJSONUnMarshaler struct {
 	Currency  string    `json:"currency"`
 }
 
-func (it *CreateDatasItem) DecodeJSON(b []byte, enc encoder.Encoder) error {
-	var uit CreateDatasItemJSONUnMarshaler
+func (it *UpdateDataItem) DecodeJSON(b []byte, enc encoder.Encoder) error {
+	var uit UpdateDataItemJSONUnMarshaler
 	if err := enc.Unmarshal(b, &uit); err != nil {
 		return common.DecorateError(err, common.ErrDecodeJson, *it)
 	}

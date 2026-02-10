@@ -1,33 +1,35 @@
 package storage
 
 import (
-	"github.com/ProtoconNet/mitum-currency/v3/types"
-	mitumbase "github.com/ProtoconNet/mitum2/base"
+	"github.com/ProtoconNet/mitum-currency/v3/common"
+	"github.com/ProtoconNet/mitum2/base"
 	"github.com/ProtoconNet/mitum2/util/encoder"
+	"github.com/pkg/errors"
 )
 
-func (fact *UpdateDataFact) unpack(
-	enc encoder.Encoder,
-	sa, ta string,
-	dataKey, dataValue, cid string,
-) error {
-	switch sender, err := mitumbase.DecodeAddress(sa, enc); {
+func (fact *UpdateDataFact) unpack(enc encoder.Encoder, sa string, bit []byte) error {
+	switch a, err := base.DecodeAddress(sa, enc); {
 	case err != nil:
 		return err
 	default:
-		fact.sender = sender
+		fact.sender = a
 	}
 
-	switch contract, err := mitumbase.DecodeAddress(ta, enc); {
-	case err != nil:
+	hit, err := enc.DecodeSlice(bit)
+	if err != nil {
 		return err
-	default:
-		fact.contract = contract
 	}
 
-	fact.dataKey = dataKey
-	fact.dataValue = dataValue
-	fact.currency = types.CurrencyID(cid)
+	items := make([]UpdateDataItem, len(hit))
+	for i := range hit {
+		j, ok := hit[i].(UpdateDataItem)
+		if !ok {
+			return common.ErrTypeMismatch.Wrap(errors.Errorf("expected %T, not %T", UpdateDataItem{}, hit[i]))
+		}
+
+		items[i] = j
+	}
+	fact.items = items
 
 	return nil
 }

@@ -1,14 +1,13 @@
-package cmds
+package digest
 
 import (
 	"context"
 
-	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
-	"github.com/ProtoconNet/mitum-storage/digest"
-	"github.com/ProtoconNet/mitum2/isaac"
-	"github.com/ProtoconNet/mitum2/launch"
-	"github.com/ProtoconNet/mitum2/util"
-	"github.com/ProtoconNet/mitum2/util/logging"
+	cdigest "github.com/imfact-labs/currency-model/digest"
+	"github.com/imfact-labs/mitum2/isaac"
+	"github.com/imfact-labs/mitum2/launch"
+	"github.com/imfact-labs/mitum2/util"
+	"github.com/imfact-labs/mitum2/util/logging"
 )
 
 func ProcessDigester(ctx context.Context) (context.Context, error) {
@@ -37,7 +36,7 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 		return ctx, nil
 	}
 
-	if err := st.CreateIndex(digest.DefaultIndexes); err != nil {
+	if err := st.CreateIndex(DefaultIndexes); err != nil {
 		return ctx, err
 	}
 
@@ -73,7 +72,7 @@ func ProcessDigester(ctx context.Context) (context.Context, error) {
 
 	di.PrepareFunc = []cdigest.BlockSessionPrepareFunc{
 		cdigest.PrepareCurrencies, cdigest.PrepareAccounts, cdigest.PrepareDIDRegistry,
-		digest.PrepareStorage,
+		PrepareStorage,
 	}
 
 	return context.WithValue(ctx, cdigest.ContextValueDigester, di), nil

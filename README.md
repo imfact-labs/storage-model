@@ -1,27 +1,24 @@
-### mitum-storage
+### storage-model
 
-*mitum-storage* is a storage contract model based on the second version of mitum(aka [mitum2](https://github.com/ProtoconNet/mitum2)).
+*storage-model* is a storage contract model based on [mitum](https://github.com/imfact-labs/mitum2).
 
 #### Installation
 
-Before you build `mitum-storage`, make sure to run `docker run` for digest api.
-
 ```sh
-$ git clone https://github.com/ProtoconNet/mitum-storage
+$ git clone https://github.com/imfact-labs/storage-model
 
-$ cd mitum-storage
+$ cd storage-model
 
-$ go build -o ./mitum-storage
+$ go build -o ./imfact ./main.go
 ```
 
 #### Run
 
 ```sh
-$ ./mitum-storage init --design=<config file> <genesis file>
+$ ./imfact init --design=<config file> <genesis config file>
 
-$ ./mitum-storage run <config file> --dev.allow-consensus
+$ ./imfact run --design=<config file>
 ```
 
 [standalong.yml](standalone.yml) is a sample of `config file`.
-
-[genesis-design.yml](genesis-design.yml) is a sample of `genesis design file`.
+[genesis-design.yml](genesis-design.yml) is a sample of `genesis config file`.

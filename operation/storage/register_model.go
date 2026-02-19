@@ -1,14 +1,14 @@
 package storage
 
 import (
-	"github.com/ProtoconNet/mitum-currency/v3/common"
-	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	"github.com/ProtoconNet/mitum-storage/types"
-	mitumbase "github.com/ProtoconNet/mitum2/base"
-	"github.com/ProtoconNet/mitum2/util"
-	"github.com/ProtoconNet/mitum2/util/hint"
-	"github.com/ProtoconNet/mitum2/util/valuehash"
+	"github.com/imfact-labs/currency-model/common"
+	"github.com/imfact-labs/currency-model/operation/extras"
+	ctypes "github.com/imfact-labs/currency-model/types"
+	mitumbase "github.com/imfact-labs/mitum2/base"
+	"github.com/imfact-labs/mitum2/util"
+	"github.com/imfact-labs/mitum2/util/hint"
+	"github.com/imfact-labs/mitum2/util/valuehash"
+	"github.com/imfact-labs/storage-model/types"
 	"github.com/pkg/errors"
 )
 
@@ -135,6 +135,14 @@ func (fact RegisterModelFact) Signer() mitumbase.Address {
 
 func (fact RegisterModelFact) InActiveContractOwnerHandlerOnly() [][2]mitumbase.Address {
 	return [][2]mitumbase.Address{{fact.contract, fact.sender}}
+}
+
+func (fact RegisterModelFact) DupKey() (map[ctypes.DuplicationKeyType][]string, error) {
+	r := make(map[ctypes.DuplicationKeyType][]string)
+	r[extras.DuplicationKeyTypeSender] = []string{fact.sender.String()}
+	r[extras.DuplicationKeyTypeContractStatus] = []string{fact.contract.String()}
+
+	return r, nil
 }
 
 type RegisterModel struct {

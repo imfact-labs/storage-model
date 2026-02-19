@@ -1,15 +1,16 @@
-package digest
+package api
 
 import (
 	"net/http"
 	"strconv"
 	"time"
 
-	cdigest "github.com/ProtoconNet/mitum-currency/v3/digest"
-	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	"github.com/ProtoconNet/mitum-storage/types"
-	"github.com/ProtoconNet/mitum2/base"
-	mitumutil "github.com/ProtoconNet/mitum2/util"
+	apic "github.com/imfact-labs/currency-model/api"
+	ctypes "github.com/imfact-labs/currency-model/types"
+	"github.com/imfact-labs/mitum2/base"
+	mitumutil "github.com/imfact-labs/mitum2/util"
+	"github.com/imfact-labs/storage-model/digest"
+	"github.com/imfact-labs/storage-model/types"
 	"github.com/pkg/errors"
 )
 
@@ -20,7 +21,7 @@ var (
 	HandlerPathStorageDataCount   = `/storage/{contract:(?i)` + ctypes.REStringAddressString + `}/datacount`
 )
 
-func SetHandlers(hd *cdigest.Handlers) {
+func SetHandlers(hd *apic.Handlers) {
 	get := 1000
 	_ = hd.SetHandler(HandlerPathStorageData, HandleStorageData, true, get, get).
 		Methods(http.MethodOptions, "GET")
@@ -32,37 +33,37 @@ func SetHandlers(hd *cdigest.Handlers) {
 		Methods(http.MethodOptions, "GET")
 }
 
-func HandleStorageDesign(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDesign(hd *apic.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cacheKey := cdigest.CacheKeyPath(r)
-	if err := cdigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
+	cacheKey := apic.CacheKeyPath(r)
+	if err := apic.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
 		return
 	}
 
-	contract, err, status := cdigest.ParseRequest(w, r, "contract")
+	contract, err, status := apic.ParseRequest(w, r, "contract")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
 	if v, err, shared := hd.RG().Do(cacheKey, func() (interface{}, error) {
 		return handleStorageDesignInGroup(hd, contract)
 	}); err != nil {
-		cdigest.HTTP2HandleError(w, err)
+		apic.HTTP2HandleError(w, err)
 	} else {
-		cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+		apic.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 		if !shared {
-			cdigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
+			apic.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
 		}
 	}
 }
 
-func handleStorageDesignInGroup(hd *cdigest.Handlers, contract string) ([]byte, error) {
+func handleStorageDesignInGroup(hd *apic.Handlers, contract string) ([]byte, error) {
 	var de types.Design
 	var st base.State
 
-	de, st, err := StorageDesign(hd.Database(), contract)
+	de, st, err := digest.StorageDesign(hd.Database(), contract)
 	if err != nil {
 		return nil, err
 	}
@@ -74,66 +75,66 @@ func handleStorageDesignInGroup(hd *cdigest.Handlers, contract string) ([]byte, 
 	return hd.Encoder().Marshal(i)
 }
 
-func buildStorageDesign(hd *cdigest.Handlers, contract string, de types.Design, st base.State) (cdigest.Hal, error) {
+func buildStorageDesign(hd *apic.Handlers, contract string, de types.Design, st base.State) (apic.Hal, error) {
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
 
-	var hal cdigest.Hal
-	hal = cdigest.NewBaseHal(de, cdigest.NewHalLink(h, nil))
+	var hal apic.Hal
+	hal = apic.NewBaseHal(de, apic.NewHalLink(h, nil))
 
-	h, err = hd.CombineURL(cdigest.HandlerPathBlockByHeight, "height", st.Height().String())
+	h, err = hd.CombineURL(apic.HandlerPathBlockByHeight, "height", st.Height().String())
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("block", cdigest.NewHalLink(h, nil))
+	hal = hal.AddLink("block", apic.NewHalLink(h, nil))
 
 	for i := range st.Operations() {
-		h, err := hd.CombineURL(cdigest.HandlerPathOperation, "hash", st.Operations()[i].String())
+		h, err := hd.CombineURL(apic.HandlerPathOperation, "hash", st.Operations()[i].String())
 		if err != nil {
 			return nil, err
 		}
-		hal = hal.AddLink("operations", cdigest.NewHalLink(h, nil))
+		hal = hal.AddLink("operations", apic.NewHalLink(h, nil))
 	}
 
 	return hal, nil
 }
 
-func HandleStorageData(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageData(hd *apic.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cacheKey := cdigest.CacheKeyPath(r)
-	if err := cdigest.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
+	cacheKey := apic.CacheKeyPath(r)
+	if err := apic.LoadFromCache(hd.Cache(), cacheKey, w); err == nil {
 		return
 	}
 
-	contract, err, status := cdigest.ParseRequest(w, r, "contract")
+	contract, err, status := apic.ParseRequest(w, r, "contract")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
-	key, err, status := cdigest.ParseRequest(w, r, "data_key")
+	key, err, status := apic.ParseRequest(w, r, "data_key")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
 	if v, err, shared := hd.RG().Do(cacheKey, func() (interface{}, error) {
 		return handleStorageDataInGroup(hd, contract, key)
 	}); err != nil {
-		cdigest.HTTP2HandleError(w, err)
+		apic.HTTP2HandleError(w, err)
 	} else {
-		cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+		apic.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 		if !shared {
-			cdigest.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
+			apic.HTTP2WriteCache(w, cacheKey, hd.ExpireShortLived())
 		}
 	}
 }
 
-func handleStorageDataInGroup(hd *cdigest.Handlers, contract, key string) ([]byte, error) {
-	data, height, operation, timestamp, deleted, err := StorageData(hd.Database(), contract, key)
+func handleStorageDataInGroup(hd *apic.Handlers, contract, key string) ([]byte, error) {
+	data, height, operation, timestamp, deleted, err := digest.StorageData(hd.Database(), contract, key)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +147,8 @@ func handleStorageDataInGroup(hd *cdigest.Handlers, contract, key string) ([]byt
 }
 
 func buildStorageDataHal(
-	hd *cdigest.Handlers,
-	contract string, data types.Data, height int64, operation, timestamp string, deleted bool) (cdigest.Hal, error) {
+	hd *apic.Handlers,
+	contract string, data types.Data, height int64, operation, timestamp string, deleted bool) (apic.Hal, error) {
 	h, err := hd.CombineURL(
 		HandlerPathStorageData,
 		"contract", contract, "data_key", data.DataKey())
@@ -155,52 +156,52 @@ func buildStorageDataHal(
 		return nil, err
 	}
 
-	var hal cdigest.Hal
-	hal = cdigest.NewBaseHal(
+	var hal apic.Hal
+	hal = apic.NewBaseHal(
 		struct {
 			Data      types.Data `json:"data"`
 			Height    int64      `json:"height"`
 			Operation string     `json:"operation"`
 			Timestamp string     `json:"timestamp"`
 		}{Data: data, Height: height, Operation: operation, Timestamp: timestamp},
-		cdigest.NewHalLink(h, nil),
+		apic.NewHalLink(h, nil),
 	)
 
-	h, err = hd.CombineURL(cdigest.HandlerPathBlockByHeight, "height", strconv.FormatInt(height, 10))
+	h, err = hd.CombineURL(apic.HandlerPathBlockByHeight, "height", strconv.FormatInt(height, 10))
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("block", cdigest.NewHalLink(h, nil))
+	hal = hal.AddLink("block", apic.NewHalLink(h, nil))
 
-	h, err = hd.CombineURL(cdigest.HandlerPathOperation, "hash", operation)
+	h, err = hd.CombineURL(apic.HandlerPathOperation, "hash", operation)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("operation", cdigest.NewHalLink(h, nil))
+	hal = hal.AddLink("operation", apic.NewHalLink(h, nil))
 
 	return hal, nil
 }
 
-func HandleStorageDataHistory(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDataHistory(hd *apic.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	limit := cdigest.ParseLimitQuery(r.URL.Query().Get("limit"))
-	offset := cdigest.ParseStringQuery(r.URL.Query().Get("offset"))
-	reverse := cdigest.ParseBoolQuery(r.URL.Query().Get("reverse"))
+	limit := apic.ParseLimitQuery(r.URL.Query().Get("limit"))
+	offset := apic.ParseStringQuery(r.URL.Query().Get("offset"))
+	reverse := apic.ParseBoolQuery(r.URL.Query().Get("reverse"))
 
-	cacheKey := cdigest.CacheKey(
-		r.URL.Path, cdigest.StringOffsetQuery(offset),
-		cdigest.StringBoolQuery("reverse", reverse),
+	cacheKey := apic.CacheKey(
+		r.URL.Path, apic.StringOffsetQuery(offset),
+		apic.StringBoolQuery("reverse", reverse),
 	)
 
-	contract, err, status := cdigest.ParseRequest(w, r, "contract")
+	contract, err, status := apic.ParseRequest(w, r, "contract")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
-	key, err, status := cdigest.ParseRequest(w, r, "data_key")
+	key, err, status := apic.ParseRequest(w, r, "data_key")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 		return
 	}
 
@@ -212,7 +213,7 @@ func HandleStorageDataHistory(hd *cdigest.Handlers, w http.ResponseWriter, r *ht
 
 	if err != nil {
 		hd.Log().Err(err).Str("contract", contract).Msg("failed to get data history")
-		cdigest.HTTP2HandleError(w, err)
+		apic.HTTP2HandleError(w, err)
 
 		return
 	}
@@ -225,7 +226,7 @@ func HandleStorageDataHistory(hd *cdigest.Handlers, w http.ResponseWriter, r *ht
 		filled = l[1].(bool)
 	}
 
-	cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, b, http.StatusOK)
+	apic.HTTP2WriteHalBytes(hd.Encoder(), w, b, http.StatusOK)
 
 	if !shared {
 		expire := hd.ExpireNotFilled()
@@ -233,12 +234,12 @@ func HandleStorageDataHistory(hd *cdigest.Handlers, w http.ResponseWriter, r *ht
 			expire = time.Minute
 		}
 
-		cdigest.HTTP2WriteCache(w, cacheKey, expire)
+		apic.HTTP2WriteCache(w, cacheKey, expire)
 	}
 }
 
 func handleStorageDataHistoryInGroup(
-	hd *cdigest.Handlers,
+	hd *apic.Handlers,
 	contract, key string,
 	offset string,
 	reverse bool,
@@ -251,8 +252,8 @@ func handleStorageDataHistoryInGroup(
 		limit = l
 	}
 
-	var vas []cdigest.Hal
-	if err := SotrageDataHistoryByDataKey(
+	var vas []apic.Hal
+	if err := digest.SotrageDataHistoryByDataKey(
 		hd.Database(), contract, key, reverse, offset, limit,
 		func(data *types.Data, height int64, operation, timestamp string, deleted bool) (bool, error) {
 			hal, err := buildStorageDataHal(hd, contract, *data, height, operation, timestamp, deleted)
@@ -279,12 +280,12 @@ func handleStorageDataHistoryInGroup(
 }
 
 func buildStorageDataHistoryHal(
-	hd *cdigest.Handlers,
+	hd *apic.Handlers,
 	contract, key string,
-	vas []cdigest.Hal,
+	vas []apic.Hal,
 	offset string,
 	reverse bool,
-) (cdigest.Hal, error) {
+) (apic.Hal, error) {
 	baseSelf, err := hd.CombineURL(
 		HandlerPathStorageDataHistory,
 		"contract", contract,
@@ -296,20 +297,20 @@ func buildStorageDataHistoryHal(
 
 	self := baseSelf
 	if len(offset) > 0 {
-		self = cdigest.AddQueryValue(baseSelf, cdigest.StringOffsetQuery(offset))
+		self = apic.AddQueryValue(baseSelf, apic.StringOffsetQuery(offset))
 	}
 	if reverse {
-		self = cdigest.AddQueryValue(baseSelf, cdigest.StringBoolQuery("reverse", reverse))
+		self = apic.AddQueryValue(baseSelf, apic.StringBoolQuery("reverse", reverse))
 	}
 
-	var hal cdigest.Hal
-	hal = cdigest.NewBaseHal(vas, cdigest.NewHalLink(self, nil))
+	var hal apic.Hal
+	hal = apic.NewBaseHal(vas, apic.NewHalLink(self, nil))
 
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("service", cdigest.NewHalLink(h, nil))
+	hal = hal.AddLink("service", apic.NewHalLink(h, nil))
 
 	var nextOffset string
 
@@ -328,34 +329,34 @@ func buildStorageDataHistoryHal(
 
 	if len(nextOffset) > 0 {
 		next := baseSelf
-		next = cdigest.AddQueryValue(next, cdigest.StringOffsetQuery(nextOffset))
+		next = apic.AddQueryValue(next, apic.StringOffsetQuery(nextOffset))
 
 		if reverse {
-			next = cdigest.AddQueryValue(next, cdigest.StringBoolQuery("reverse", reverse))
+			next = apic.AddQueryValue(next, apic.StringBoolQuery("reverse", reverse))
 		}
 
-		hal = hal.AddLink("next", cdigest.NewHalLink(next, nil))
+		hal = hal.AddLink("next", apic.NewHalLink(next, nil))
 	}
 
-	hal = hal.AddLink("reverse", cdigest.NewHalLink(cdigest.AddQueryValue(baseSelf, cdigest.StringBoolQuery("reverse", !reverse)), nil))
+	hal = hal.AddLink("reverse", apic.NewHalLink(apic.AddQueryValue(baseSelf, apic.StringBoolQuery("reverse", !reverse)), nil))
 
 	return hal, nil
 }
 
-func HandleStorageDataCount(hd *cdigest.Handlers, w http.ResponseWriter, r *http.Request) {
+func HandleStorageDataCount(hd *apic.Handlers, w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	cachekey := cdigest.CacheKey(
+	cachekey := apic.CacheKey(
 		r.URL.Path,
 	)
 
-	contract, err, status := cdigest.ParseRequest(w, r, "contract")
+	contract, err, status := apic.ParseRequest(w, r, "contract")
 	if err != nil {
-		cdigest.HTTP2ProblemWithError(w, err, status)
+		apic.HTTP2ProblemWithError(w, err, status)
 
 		return
 	}
 
-	deleted := cdigest.ParseBoolQuery(r.URL.Query().Get("deleted"))
+	deleted := apic.ParseBoolQuery(r.URL.Query().Get("deleted"))
 
 	v, err, shared := hd.RG().Do(cachekey, func() (interface{}, error) {
 		i, err := handleStorageDataCountInGroup(hd, contract, deleted)
@@ -365,24 +366,24 @@ func HandleStorageDataCount(hd *cdigest.Handlers, w http.ResponseWriter, r *http
 
 	if err != nil {
 		hd.Log().Err(err).Str("contract", contract).Msg("failed to count data")
-		cdigest.HTTP2HandleError(w, err)
+		apic.HTTP2HandleError(w, err)
 
 		return
 	}
 
-	cdigest.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
+	apic.HTTP2WriteHalBytes(hd.Encoder(), w, v.([]byte), http.StatusOK)
 
 	if !shared {
 		expire := hd.ExpireNotFilled()
-		cdigest.HTTP2WriteCache(w, cachekey, expire)
+		apic.HTTP2WriteCache(w, cachekey, expire)
 	}
 }
 
 func handleStorageDataCountInGroup(
-	hd *cdigest.Handlers,
+	hd *apic.Handlers,
 	contract string, deleted bool,
 ) ([]byte, error) {
-	count, err := DataCountByContract(
+	count, err := digest.DataCountByContract(
 		hd.Database(), contract, deleted,
 	)
 	if err != nil {
@@ -399,10 +400,10 @@ func handleStorageDataCountInGroup(
 }
 
 func buildStorageDataCountHal(
-	hd *cdigest.Handlers,
+	hd *apic.Handlers,
 	contract string,
 	count int64,
-) (cdigest.Hal, error) {
+) (apic.Hal, error) {
 	baseSelf, err := hd.CombineURL(HandlerPathStorageDataCount, "contract", contract)
 	if err != nil {
 		return nil, err
@@ -418,14 +419,14 @@ func buildStorageDataCountHal(
 	m.Contract = contract
 	m.DataCount = count
 
-	var hal cdigest.Hal
-	hal = cdigest.NewBaseHal(m, cdigest.NewHalLink(self, nil))
+	var hal apic.Hal
+	hal = apic.NewBaseHal(m, apic.NewHalLink(self, nil))
 
 	h, err := hd.CombineURL(HandlerPathStorageDesign, "contract", contract)
 	if err != nil {
 		return nil, err
 	}
-	hal = hal.AddLink("collection", cdigest.NewHalLink(h, nil))
+	hal = hal.AddLink("collection", apic.NewHalLink(h, nil))
 
 	return hal, nil
 }

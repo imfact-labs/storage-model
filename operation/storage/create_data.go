@@ -3,13 +3,13 @@ package storage
 import (
 	"fmt"
 
-	"github.com/ProtoconNet/mitum-currency/v3/common"
-	"github.com/ProtoconNet/mitum-currency/v3/operation/extras"
-	ctypes "github.com/ProtoconNet/mitum-currency/v3/types"
-	mitumbase "github.com/ProtoconNet/mitum2/base"
-	"github.com/ProtoconNet/mitum2/util"
-	"github.com/ProtoconNet/mitum2/util/hint"
-	"github.com/ProtoconNet/mitum2/util/valuehash"
+	"github.com/imfact-labs/currency-model/common"
+	"github.com/imfact-labs/currency-model/operation/extras"
+	ctypes "github.com/imfact-labs/currency-model/types"
+	mitumbase "github.com/imfact-labs/mitum2/base"
+	"github.com/imfact-labs/mitum2/util"
+	"github.com/imfact-labs/mitum2/util/hint"
+	"github.com/imfact-labs/mitum2/util/valuehash"
 	"github.com/pkg/errors"
 )
 
@@ -177,6 +177,17 @@ func (fact CreateDataFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Addre
 	return arr
 }
 
+func (fact CreateDataFact) DupKey() (map[ctypes.DuplicationKeyType][]string, error) {
+	r := make(map[ctypes.DuplicationKeyType][]string)
+	r[extras.DuplicationKeyTypeSender] = []string{fact.sender.String()}
+	for _, item := range fact.items {
+		r[DuplicationTypeStorageData] = append(
+			r[DuplicationTypeStorageData], fmt.Sprintf("%s:%s", item.Contract().String(), item.DataKey()))
+	}
+
+	return r, nil
+}
+
 type CreateData struct {
 	extras.ExtendedOperation
 }
@@ -186,3 +197,7 @@ func NewCreateData(fact CreateDataFact) (CreateData, error) {
 		ExtendedOperation: extras.NewExtendedOperation(CreateDataHint, fact),
 	}, nil
 }
+
+const (
+	DuplicationTypeStorageData ctypes.DuplicationKeyType = "storage-data"
+)

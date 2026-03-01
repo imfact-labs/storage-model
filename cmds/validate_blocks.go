@@ -3,7 +3,7 @@ package cmds
 import (
 	"context"
 
-	ccmds "github.com/imfact-labs/currency-model/app/cmds"
+	csteps "github.com/imfact-labs/currency-model/app/runtime/steps"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/isaac"
 	isaacblock "github.com/imfact-labs/mitum2/isaac/block"
@@ -12,6 +12,7 @@ import (
 	"github.com/imfact-labs/mitum2/util/encoder"
 	"github.com/imfact-labs/mitum2/util/logging"
 	"github.com/imfact-labs/mitum2/util/ps"
+	"github.com/imfact-labs/storage-model/runtime/steps"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -77,14 +78,14 @@ func (cmd *ValidateBlocksCommand) Run(pctx context.Context) error {
 	_ = pps.SetLogging(log)
 
 	_ = pps.
-		AddOK(launch.PNameEncoder, ccmds.PEncoder, nil).
+		AddOK(launch.PNameEncoder, csteps.PEncoder, nil).
 		AddOK(launch.PNameDesign, launch.PLoadDesign, nil, launch.PNameEncoder).
 		AddOK(launch.PNameLocal, launch.PLocal, nil, launch.PNameDesign).
 		AddOK(launch.PNameBlockItemReaders, launch.PBlockItemReaders, nil, launch.PNameDesign).
 		AddOK(launch.PNameStorage, launch.PStorage, launch.PCloseStorage, launch.PNameLocal)
 
 	_ = pps.POK(launch.PNameEncoder).
-		PostAddOK(launch.PNameAddHinters, PAddHinters)
+		PostAddOK(launch.PNameAddHinters, steps.PAddHinters)
 
 	_ = pps.POK(launch.PNameDesign).
 		PostAddOK(launch.PNameCheckDesign, launch.PCheckDesign)

@@ -1,16 +1,17 @@
-package cmds
+package pipeline
 
 import (
-	ccmds "github.com/imfact-labs/currency-model/app/cmds"
+	csteps "github.com/imfact-labs/currency-model/app/runtime/steps"
 	"github.com/imfact-labs/mitum2/launch"
 	"github.com/imfact-labs/mitum2/util/ps"
+	"github.com/imfact-labs/storage-model/runtime/steps"
 )
 
 func DefaultImportPS() *ps.PS {
 	pps := ps.NewPS("cmd-import")
 
 	_ = pps.
-		AddOK(launch.PNameEncoder, ccmds.PEncoder, nil).
+		AddOK(launch.PNameEncoder, csteps.PEncoder, nil).
 		AddOK(launch.PNameDesign, launch.PLoadDesign, nil, launch.PNameEncoder).
 		AddOK(launch.PNameTimeSyncer, launch.PStartTimeSyncer, launch.PCloseTimeSyncer, launch.PNameDesign).
 		AddOK(launch.PNameLocal, launch.PLocal, nil, launch.PNameDesign).
@@ -18,7 +19,7 @@ func DefaultImportPS() *ps.PS {
 		AddOK(launch.PNameStorage, launch.PStorage, launch.PCloseStorage, launch.PNameLocal)
 
 	_ = pps.POK(launch.PNameEncoder).
-		PostAddOK(launch.PNameAddHinters, PAddHinters)
+		PostAddOK(launch.PNameAddHinters, steps.PAddHinters)
 
 	_ = pps.POK(launch.PNameDesign).
 		PostAddOK(launch.PNameCheckDesign, launch.PCheckDesign).

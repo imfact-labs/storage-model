@@ -6,10 +6,7 @@ toolchain go1.24.9
 
 require (
 	github.com/alecthomas/kong v1.12.1
-	github.com/imfact-labs/currency-model v0.0.6
-	github.com/imfact-labs/currency-model/api v0.0.6
-	github.com/imfact-labs/currency-model/app v0.0.6
-	github.com/imfact-labs/currency-model/digest v0.0.6
+	github.com/imfact-labs/currency-model v0.0.0-20260227065611-4970250bf238
 	github.com/imfact-labs/mitum2 v0.0.0-20260219060841-f51dacce1321
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.34.0

@@ -18,6 +18,7 @@ import (
 	"github.com/imfact-labs/mitum2/util"
 	"github.com/imfact-labs/mitum2/util/encoder"
 	"github.com/imfact-labs/mitum2/util/logging"
+	"github.com/imfact-labs/storage-model/runtime/pipeline"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -80,7 +81,7 @@ func (cmd *ImportCommand) Run(pctx context.Context) error {
 		launch.PrivatekeyContextKey: string(cmd.PrivatekeyFlags.Flag.Body()),
 	})
 
-	pps := DefaultImportPS()
+	pps := pipeline.DefaultImportPS()
 	_ = pps.SetLogging(log)
 
 	_ = pps.AddOK(pNameImportBlocks, cmd.importBlocks, nil, launch.PNameStorage)

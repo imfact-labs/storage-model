@@ -5,14 +5,15 @@ import (
 
 	apic "github.com/imfact-labs/currency-model/api"
 	ccmds "github.com/imfact-labs/currency-model/app/cmds"
+	cpipeline "github.com/imfact-labs/currency-model/app/runtime/pipeline"
 	cdigest "github.com/imfact-labs/currency-model/digest"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/launch"
 	"github.com/imfact-labs/mitum2/util"
 	"github.com/imfact-labs/mitum2/util/logging"
 	"github.com/imfact-labs/mitum2/util/ps"
-	"github.com/imfact-labs/storage-model/api"
 	"github.com/imfact-labs/storage-model/digest"
+	"github.com/imfact-labs/storage-model/runtime/steps"
 	"github.com/pkg/errors"
 )
 
@@ -52,18 +53,31 @@ func (cmd *RunCommand) Run(pctx context.Context) error {
 		launch.ACLFlagsContextKey:      cmd.ACLFlags,
 	})
 
-	pps := ccmds.DefaultRunPS()
+	pps := cpipeline.DefaultRunPS()
+	registry := mustBuildModuleRegistry()
 
 	_ = pps.AddOK(cdigest.PNameDigester, digest.ProcessDigester, nil, cdigest.PNameDigesterDataBase).
 		AddOK(cdigest.PNameStartDigester, cdigest.ProcessStartDigester, nil, apic.PNameStartAPI)
 	_ = pps.POK(launch.PNameStorage).PostAddOK(ps.Name("check-hold"), cmd.RunCommand.PCheckHold)
-	_ = pps.POK(launch.PNameStates).
-		PreAddOK(PNameOperationProcessorsMap, POperationProcessorsMap).
+	pstates := pps.POK(launch.PNameStates)
+	entries := registry.Entries()
+	for i := range entries {
+		entry := entries[i]
+		for j := range entry.OperationProcessors {
+			if entry.OperationProcessors[j].Name == launch.PNameOperationProcessorsMap {
+				continue
+			}
+
+			_ = pstates.PreAddOK(entry.OperationProcessors[j].Name, entry.OperationProcessors[j].Func)
+		}
+	}
+
+	_ = pstates.
 		PreAddOK(ps.Name("when-new-block-saved-in-consensus-state-func"), cmd.RunCommand.PWhenNewBlockSavedInConsensusStateFunc).
 		PreAddOK(ps.Name("when-new-block-saved-in-syncing-state-func"), cmd.RunCommand.PWhenNewBlockSavedInSyncingStateFunc).
 		PreAddOK(ps.Name("when-new-block-confirmed-func"), cmd.RunCommand.PWhenNewBlockConfirmed)
 	_ = pps.POK(launch.PNameEncoder).
-		PostAddOK(launch.PNameAddHinters, PAddHinters)
+		PostAddOK(launch.PNameAddHinters, steps.PAddHinters)
 	_ = pps.POK(apic.PNameAPI).
 		PostAddOK(ccmds.PNameDigestAPIHandlers, cmd.pDigestAPIHandlers)
 	_ = pps.POK(cdigest.PNameDigester).
@@ -77,7 +91,7 @@ func (cmd *RunCommand) Run(pctx context.Context) error {
 	defer func() {
 		log.Log().Debug().Interface("process", pps.Verbose()).Msg("process will be closed")
 
-		if _, err = pps.Close(pctx); err != nil {
+		if _, err = pps.Close(nctx); err != nil {
 			log.Log().Error().Err(err).Msg("failed to close")
 		}
 	}()
@@ -135,8 +149,14 @@ func (cmd *RunCommand) pDigestAPIHandlers(ctx context.Context) (context.Context,
 	handlers.SetEncoders(encs)
 	handlers.SetEncoder(enc)
 
-	apic.SetHandlers(handlers, design.Digest)
-	api.SetHandlers(handlers)
+	registry := mustBuildModuleRegistry()
+	entries := registry.Entries()
+	for i := range entries {
+		entry := entries[i]
+		for j := range entry.APIHandlers {
+			entry.APIHandlers[j].Register(handlers, design.Digest)
+		}
+	}
 
 	dnt.SetEncoder(encs)
 

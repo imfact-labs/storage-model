@@ -16,7 +16,6 @@ import (
 type DataItem interface {
 	util.Byter
 	util.IsValider
-	Currency() ctypes.CurrencyID
 }
 
 var CreateDataItems uint = 100
@@ -28,17 +27,23 @@ var (
 
 type CreateDataFact struct {
 	mitumbase.BaseFact
-	sender mitumbase.Address
-	items  []CreateDataItem
+	sender   mitumbase.Address
+	items    []CreateDataItem
+	currency ctypes.CurrencyID
 }
 
 func NewCreateDataFact(
-	token []byte, sender mitumbase.Address, items []CreateDataItem) CreateDataFact {
+	token []byte,
+	sender mitumbase.Address,
+	items []CreateDataItem,
+	currency ctypes.CurrencyID,
+) CreateDataFact {
 	bf := mitumbase.NewBaseFact(CreateDataFactHint, token)
 	fact := CreateDataFact{
 		BaseFact: bf,
 		sender:   sender,
 		items:    items,
+		currency: currency,
 	}
 
 	fact.SetHash(fact.GenerateHash())
@@ -54,6 +59,7 @@ func (fact CreateDataFact) IsValid(b []byte) error {
 
 	if err := util.CheckIsValiders(nil, false,
 		fact.sender,
+		fact.currency,
 	); err != nil {
 		return common.ErrFactInvalid.Wrap(err)
 	}
@@ -101,6 +107,7 @@ func (fact CreateDataFact) Bytes() []byte {
 	return util.ConcatBytesSlice(
 		fact.Token(),
 		fact.sender.Bytes(),
+		fact.currency.Bytes(),
 		util.ConcatBytesSlice(is...),
 	)
 }
@@ -115,6 +122,10 @@ func (fact CreateDataFact) Signer() mitumbase.Address {
 
 func (fact CreateDataFact) Items() []CreateDataItem {
 	return fact.items
+}
+
+func (fact CreateDataFact) Currency() ctypes.CurrencyID {
+	return fact.currency
 }
 
 func (fact CreateDataFact) Addresses() ([]mitumbase.Address, error) {
@@ -134,31 +145,12 @@ func (fact CreateDataFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
-func (fact CreateDataFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
-	required := make(map[ctypes.CurrencyID][]common.Big)
-
-	for i := range fact.items {
-		zeroBig := common.ZeroBig
-		cid := fact.items[i].Currency()
-		var amsTemp []common.Big
-		if ams, found := required[cid]; found {
-			ams = append(ams, zeroBig)
-			required[cid] = ams
-		} else {
-			amsTemp = append(amsTemp, zeroBig)
-			required[cid] = amsTemp
-		}
-	}
-
-	return required
+func (fact CreateDataFact) FeeBase() (ctypes.CurrencyID, int, int, bool) {
+	return fact.Currency(), len(fact.items), len(fact.Bytes()), extras.HasItem
 }
 
 func (fact CreateDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
-}
-
-func (fact CreateDataFact) FeeItemCount() (uint, bool) {
-	return uint(len(fact.items)), extras.HasItem
 }
 
 func (fact CreateDataFact) FactUser() mitumbase.Address {

@@ -1,14 +1,13 @@
 package storage
 
 import (
-	ctypes "github.com/imfact-labs/currency-model/types"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/util/encoder"
 	"github.com/imfact-labs/mitum2/util/hint"
 )
 
 func (it *UpdateDataItem) unpack(enc encoder.Encoder, ht hint.Hint,
-	cAdr, dataKey, dataValue, cid string,
+	cAdr, dataKey, dataValue string,
 ) error {
 	it.BaseHinter = hint.NewBaseHinter(ht)
 
@@ -21,7 +20,6 @@ func (it *UpdateDataItem) unpack(enc encoder.Encoder, ht hint.Hint,
 
 	it.dataKey = dataKey
 	it.dataValue = dataValue
-	it.currency = ctypes.CurrencyID(cid)
 
 	return nil
 }

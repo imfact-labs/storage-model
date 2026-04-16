@@ -6,13 +6,11 @@ import (
 
 	"github.com/imfact-labs/currency-model/common"
 	"github.com/imfact-labs/currency-model/state"
-	statec "github.com/imfact-labs/currency-model/state/currency"
 	ctypes "github.com/imfact-labs/currency-model/types"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/util"
 	statestrg "github.com/imfact-labs/storage-model/state"
 	"github.com/imfact-labs/storage-model/types"
-	"github.com/pkg/errors"
 )
 
 var createDataItemProcessorPool = sync.Pool{
@@ -47,10 +45,6 @@ func (ipp *CreateDataItemProcessor) PreProcess(
 
 	if err := it.IsValid(nil); err != nil {
 		return e.Wrap(err)
-	}
-
-	if err := state.CheckExistsState(statec.DesignStateKey(it.Currency()), getStateFunc); err != nil {
-		return e.Wrap(common.ErrCurrencyNF.Wrap(errors.Errorf("currency id %v", it.Currency())))
 	}
 
 	if err := state.CheckExistsState(statestrg.DesignStateKey(it.Contract()), getStateFunc); err != nil {

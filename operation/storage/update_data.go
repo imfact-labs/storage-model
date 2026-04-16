@@ -22,17 +22,23 @@ var (
 
 type UpdateDataFact struct {
 	mitumbase.BaseFact
-	sender mitumbase.Address
-	items  []UpdateDataItem
+	sender   mitumbase.Address
+	items    []UpdateDataItem
+	currency types.CurrencyID
 }
 
 func NewUpdateDataFact(
-	token []byte, sender mitumbase.Address, items []UpdateDataItem) UpdateDataFact {
+	token []byte,
+	sender mitumbase.Address,
+	items []UpdateDataItem,
+	currency types.CurrencyID,
+) UpdateDataFact {
 	bf := mitumbase.NewBaseFact(UpdateDataFactHint, token)
 	fact := UpdateDataFact{
 		BaseFact: bf,
 		sender:   sender,
 		items:    items,
+		currency: currency,
 	}
 
 	fact.SetHash(fact.GenerateHash())
@@ -48,6 +54,7 @@ func (fact UpdateDataFact) IsValid(b []byte) error {
 
 	if err := util.CheckIsValiders(nil, false,
 		fact.sender,
+		fact.currency,
 	); err != nil {
 		return common.ErrFactInvalid.Wrap(err)
 	}
@@ -95,6 +102,7 @@ func (fact UpdateDataFact) Bytes() []byte {
 	return util.ConcatBytesSlice(
 		fact.Token(),
 		fact.sender.Bytes(),
+		fact.currency.Bytes(),
 		util.ConcatBytesSlice(is...),
 	)
 }
@@ -109,6 +117,10 @@ func (fact UpdateDataFact) Sender() mitumbase.Address {
 
 func (fact UpdateDataFact) Items() []UpdateDataItem {
 	return fact.items
+}
+
+func (fact UpdateDataFact) Currency() types.CurrencyID {
+	return fact.currency
 }
 
 func (fact UpdateDataFact) Addresses() ([]mitumbase.Address, error) {
@@ -128,31 +140,12 @@ func (fact UpdateDataFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
-func (fact UpdateDataFact) FeeBase() map[types.CurrencyID][]common.Big {
-	required := make(map[types.CurrencyID][]common.Big)
-
-	for i := range fact.items {
-		zeroBig := common.ZeroBig
-		cid := fact.items[i].Currency()
-		var amsTemp []common.Big
-		if ams, found := required[cid]; found {
-			ams = append(ams, zeroBig)
-			required[cid] = ams
-		} else {
-			amsTemp = append(amsTemp, zeroBig)
-			required[cid] = amsTemp
-		}
-	}
-
-	return required
+func (fact UpdateDataFact) FeeBase() (types.CurrencyID, int, int, bool) {
+	return fact.Currency(), len(fact.items), len(fact.Bytes()), extras.HasItem
 }
 
 func (fact UpdateDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
-}
-
-func (fact UpdateDataFact) FeeItemCount() (uint, bool) {
-	return uint(len(fact.items)), extras.HasItem
 }
 
 func (fact UpdateDataFact) FactUser() mitumbase.Address {

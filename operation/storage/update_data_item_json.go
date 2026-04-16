@@ -2,7 +2,6 @@ package storage
 
 import (
 	"github.com/imfact-labs/currency-model/common"
-	ctypes "github.com/imfact-labs/currency-model/types"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/util"
 	"github.com/imfact-labs/mitum2/util/encoder"
@@ -11,10 +10,9 @@ import (
 
 type UpdateDataItemJSONMarshaler struct {
 	hint.BaseHinter
-	Contract  base.Address      `json:"contract"`
-	DataKey   string            `json:"dataKey"`
-	DataValue string            `json:"dataValue"`
-	Currency  ctypes.CurrencyID `json:"currency"`
+	Contract  base.Address `json:"contract"`
+	DataKey   string       `json:"dataKey"`
+	DataValue string       `json:"dataValue"`
 }
 
 func (it UpdateDataItem) MarshalJSON() ([]byte, error) {
@@ -23,7 +21,6 @@ func (it UpdateDataItem) MarshalJSON() ([]byte, error) {
 		Contract:   it.contract,
 		DataKey:    it.dataKey,
 		DataValue:  it.dataValue,
-		Currency:   it.currency,
 	})
 }
 
@@ -32,7 +29,6 @@ type UpdateDataItemJSONUnMarshaler struct {
 	Contract  string    `json:"contract"`
 	DataKey   string    `json:"dataKey"`
 	DataValue string    `json:"dataValue"`
-	Currency  string    `json:"currency"`
 }
 
 func (it *UpdateDataItem) DecodeJSON(b []byte, enc encoder.Encoder) error {
@@ -46,7 +42,6 @@ func (it *UpdateDataItem) DecodeJSON(b []byte, enc encoder.Encoder) error {
 		uit.Contract,
 		uit.DataKey,
 		uit.DataValue,
-		uit.Currency,
 	); err != nil {
 		return common.DecorateError(err, common.ErrDecodeJson, *it)
 	}

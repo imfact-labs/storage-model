@@ -110,19 +110,12 @@ func (fact RegisterModelFact) Currency() ctypes.CurrencyID {
 	return fact.currency
 }
 
-func (fact RegisterModelFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
-	required := make(map[ctypes.CurrencyID][]common.Big)
-	required[fact.Currency()] = []common.Big{common.ZeroBig}
-
-	return required
+func (fact RegisterModelFact) FeeBase() (ctypes.CurrencyID, int, int, bool) {
+	return fact.Currency(), extras.NoItemFeeBaseItemCount, len(fact.Bytes()), extras.HasNoItem
 }
 
 func (fact RegisterModelFact) FeePayer() mitumbase.Address {
 	return fact.sender
-}
-
-func (fact RegisterModelFact) FeeItemCount() (uint, bool) {
-	return extras.ZeroItem, extras.HasNoItem
 }
 
 func (fact RegisterModelFact) FactUser() mitumbase.Address {

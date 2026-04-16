@@ -14,7 +14,6 @@ func (it CreateDataItem) MarshalBSON() ([]byte, error) {
 			"contract":   it.contract,
 			"data_key":   it.dataKey,
 			"data_value": it.dataValue,
-			"currency":   it.currency,
 		},
 	)
 }
@@ -24,7 +23,6 @@ type CreateDataItemBSONUnmarshaler struct {
 	Contract  string `bson:"contract"`
 	DataKey   string `bson:"data_key"`
 	DataValue string `bson:"data_value"`
-	Currency  string `bson:"currency"`
 }
 
 func (it *CreateDataItem) DecodeBSON(b []byte, enc *bsonenc.Encoder) error {
@@ -42,7 +40,6 @@ func (it *CreateDataItem) DecodeBSON(b []byte, enc *bsonenc.Encoder) error {
 		uit.Contract,
 		uit.DataKey,
 		uit.DataValue,
-		uit.Currency,
 	); err != nil {
 		return common.DecorateError(err, common.ErrDecodeBson, *it)
 	}

@@ -74,9 +74,9 @@ func (cmd *UpdateDataCommand) parseFlags() error {
 func (cmd *UpdateDataCommand) createOperation() (base.Operation, error) { // nolint:dupl
 	e := util.StringError("failed to create update data operation")
 
-	item := storage.NewUpdateDataItem(cmd.contract, cmd.Key, cmd.Value, cmd.Currency.CID)
+	item := storage.NewUpdateDataItem(cmd.contract, cmd.Key, cmd.Value)
 
-	fact := storage.NewUpdateDataFact([]byte(cmd.Token), cmd.sender, []storage.UpdateDataItem{item})
+	fact := storage.NewUpdateDataFact([]byte(cmd.Token), cmd.sender, []storage.UpdateDataItem{item}, cmd.Currency.CID)
 
 	op, err := storage.NewUpdateData(fact)
 	if err != nil {

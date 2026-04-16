@@ -17,20 +17,17 @@ type CreateDataItem struct {
 	contract  base.Address
 	dataKey   string
 	dataValue string
-	currency  ctypes.CurrencyID
 }
 
 func NewCreateDataItem(
 	contract base.Address,
 	key, value string,
-	currency ctypes.CurrencyID,
 ) CreateDataItem {
 	return CreateDataItem{
 		BaseHinter: hint.NewBaseHinter(CreateDataItemHint),
 		contract:   contract,
 		dataKey:    key,
 		dataValue:  value,
-		currency:   currency,
 	}
 }
 
@@ -39,7 +36,6 @@ func (it CreateDataItem) Bytes() []byte {
 		it.contract.Bytes(),
 		[]byte(it.dataKey),
 		[]byte(it.dataValue),
-		it.currency.Bytes(),
 	)
 }
 
@@ -80,10 +76,6 @@ func (it CreateDataItem) DataKey() string {
 
 func (it CreateDataItem) DataValue() string {
 	return it.dataValue
-}
-
-func (it CreateDataItem) Currency() ctypes.CurrencyID {
-	return it.currency
 }
 
 func (it CreateDataItem) Addresses() []base.Address {

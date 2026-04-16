@@ -119,19 +119,12 @@ func (fact DeleteDataFact) Addresses() ([]mitumbase.Address, error) {
 	return as, nil
 }
 
-func (fact DeleteDataFact) FeeBase() map[ctypes.CurrencyID][]common.Big {
-	required := make(map[ctypes.CurrencyID][]common.Big)
-	required[fact.Currency()] = []common.Big{common.ZeroBig}
-
-	return required
+func (fact DeleteDataFact) FeeBase() (ctypes.CurrencyID, int, int, bool) {
+	return fact.Currency(), extras.NoItemFeeBaseItemCount, len(fact.Bytes()), extras.HasNoItem
 }
 
 func (fact DeleteDataFact) FeePayer() mitumbase.Address {
 	return fact.sender
-}
-
-func (fact DeleteDataFact) FeeItemCount() (uint, bool) {
-	return extras.ZeroItem, extras.HasNoItem
 }
 
 func (fact DeleteDataFact) FactUser() mitumbase.Address {

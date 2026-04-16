@@ -2,18 +2,20 @@ package storage
 
 import (
 	"github.com/imfact-labs/currency-model/common"
+	"github.com/imfact-labs/currency-model/types"
 	"github.com/imfact-labs/mitum2/base"
 	"github.com/imfact-labs/mitum2/util/encoder"
 	"github.com/pkg/errors"
 )
 
-func (fact *UpdateDataFact) unpack(enc encoder.Encoder, sa string, bit []byte) error {
+func (fact *UpdateDataFact) unpack(enc encoder.Encoder, sa string, bit []byte, cid string) error {
 	switch a, err := base.DecodeAddress(sa, enc); {
 	case err != nil:
 		return err
 	default:
 		fact.sender = a
 	}
+	fact.currency = types.CurrencyID(cid)
 
 	hit, err := enc.DecodeSlice(bit)
 	if err != nil {

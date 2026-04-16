@@ -6,7 +6,6 @@ import (
 
 	"github.com/imfact-labs/currency-model/common"
 	"github.com/imfact-labs/currency-model/state"
-	statec "github.com/imfact-labs/currency-model/state/currency"
 	statee "github.com/imfact-labs/currency-model/state/extension"
 	ctypes "github.com/imfact-labs/currency-model/types"
 	mitumbase "github.com/imfact-labs/mitum2/base"
@@ -68,11 +67,6 @@ func (opp *RegisterModelProcessor) PreProcess(
 		return ctx, mitumbase.NewBaseOperationProcessReasonError(
 			common.ErrMPreProcess.
 				Errorf("%v", err)), nil
-	}
-
-	if err := state.CheckExistsState(statec.DesignStateKey(fact.Currency()), getStateFunc); err != nil {
-		return ctx, mitumbase.NewBaseOperationProcessReasonError(
-			common.ErrMPreProcess.Wrap(common.ErrMCurrencyNF).Errorf("currency id, %v", fact.Currency())), nil
 	}
 
 	if found, _ := state.CheckNotExistsState(statestrg.DesignStateKey(fact.Contract()), getStateFunc); found {

@@ -17,20 +17,17 @@ type UpdateDataItem struct {
 	contract  base.Address
 	dataKey   string
 	dataValue string
-	currency  ctypes.CurrencyID
 }
 
 func NewUpdateDataItem(
 	contract base.Address,
 	key, value string,
-	currency ctypes.CurrencyID,
 ) UpdateDataItem {
 	return UpdateDataItem{
 		BaseHinter: hint.NewBaseHinter(UpdateDataItemHint),
 		contract:   contract,
 		dataKey:    key,
 		dataValue:  value,
-		currency:   currency,
 	}
 }
 
@@ -39,7 +36,6 @@ func (it UpdateDataItem) Bytes() []byte {
 		it.contract.Bytes(),
 		[]byte(it.dataKey),
 		[]byte(it.dataValue),
-		it.currency.Bytes(),
 	)
 }
 
@@ -80,10 +76,6 @@ func (it UpdateDataItem) DataKey() string {
 
 func (it UpdateDataItem) DataValue() string {
 	return it.dataValue
-}
-
-func (it UpdateDataItem) Currency() ctypes.CurrencyID {
-	return it.currency
 }
 
 func (it UpdateDataItem) Addresses() []base.Address {

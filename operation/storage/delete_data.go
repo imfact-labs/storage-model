@@ -141,7 +141,6 @@ func (fact DeleteDataFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Addre
 
 func (fact DeleteDataFact) DupKey() (map[ctypes.DuplicationKeyType][]string, error) {
 	r := make(map[ctypes.DuplicationKeyType][]string)
-	r[extras.DuplicationKeyTypeSender] = []string{fact.sender.String()}
 	r[DuplicationTypeStorageData] = []string{fmt.Sprintf("%s:%s", fact.Contract().String(), fact.DataKey())}
 
 	return r, nil
@@ -149,6 +148,16 @@ func (fact DeleteDataFact) DupKey() (map[ctypes.DuplicationKeyType][]string, err
 
 type DeleteData struct {
 	extras.ExtendedOperation
+}
+
+func (op DeleteData) DupKey() (map[ctypes.DuplicationKeyType][]string, error) {
+	r := make(map[ctypes.DuplicationKeyType][]string)
+
+	if err := extras.AddOperationFeePayerDupKeys(r, op); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
 
 func NewDeleteData(fact DeleteDataFact) (DeleteData, error) {

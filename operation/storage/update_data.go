@@ -166,7 +166,6 @@ func (fact UpdateDataFact) ActiveContractOwnerHandlerOnly() [][2]mitumbase.Addre
 
 func (fact UpdateDataFact) DupKey() (map[types.DuplicationKeyType][]string, error) {
 	r := make(map[types.DuplicationKeyType][]string)
-	r[extras.DuplicationKeyTypeSender] = []string{fact.sender.String()}
 	for _, item := range fact.items {
 		r[DuplicationTypeStorageData] = append(
 			r[DuplicationTypeStorageData], fmt.Sprintf("%s:%s", item.Contract().String(), item.DataKey()))
@@ -177,6 +176,16 @@ func (fact UpdateDataFact) DupKey() (map[types.DuplicationKeyType][]string, erro
 
 type UpdateData struct {
 	extras.ExtendedOperation
+}
+
+func (op UpdateData) DupKey() (map[types.DuplicationKeyType][]string, error) {
+	r := make(map[types.DuplicationKeyType][]string)
+
+	if err := extras.AddOperationFeePayerDupKeys(r, op); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
 
 func NewUpdateData(fact UpdateDataFact) (UpdateData, error) {
